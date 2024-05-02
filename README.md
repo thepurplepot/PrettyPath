@@ -6,13 +6,13 @@
  - [Todos](#todos)
 
 # Dependencies
-CMake >= 3.11
-C++ 17 compatible compiler
-libosmium 
-protozero
-ZLIB
-GDAL
-Python: staticmaps
+- CMake >= 3.11
+- C++ 17 compatible compiler
+- libosmium 
+- protozero
+- ZLIB
+- GDAL
+- Python: staticmaps
 
 # Setup
 Get OSM data for region from: https://download.geofabrik.de/europe/united-kingdom/england/cumbria.html
@@ -44,4 +44,4 @@ plot_path.py can be used to visulise the path.
 License
 ----
 
-GPL-3.0
+MIT

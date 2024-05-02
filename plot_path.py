@@ -24,7 +24,35 @@ def get_path(filename='data/path.csv'):
             path.append(node)
     return path
 
+def calculate_ascent_descent(path):
+    total_ascent = 0
+    ascent_length = 0
+    total_descent = 0
+    descent_length = 0
+    flat_length = 0
+
+    for i in range(len(path) - 1):
+        elevation_difference = path[i+1].elevation - path[i].elevation
+        length = path[i].length
+        if elevation_difference > 0:
+            total_ascent += elevation_difference
+            ascent_length += length
+        elif elevation_difference < 0:
+            total_descent += abs(elevation_difference)
+            descent_length += length
+        else:
+            flat_length += length
+
+    ascent_length /= 1000
+    descent_length /= 1000
+    flat_length /= 1000
+    return total_ascent, ascent_length, total_descent, descent_length, flat_length
+
 path = get_path()
+total_ascent, ascent_length, total_descent, descent_length, flat_length = calculate_ascent_descent(path)
+print(f"Total ascent: {total_ascent:.2f} m in {ascent_length:.2f} km")
+print(f"Total descent: {total_descent:.2f} m in {descent_length:.2f} km")
+print(f"Flat: {flat_length:.2f} km")
 
 longitudes = [node.longitude for node in path]
 latitudes = [node.latitude for node in path]

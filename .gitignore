@@ -1,4 +1,5 @@
 .DS_Store
+.vscode/
 # Ignore CMake build files
 CMakeFiles/
 CMakeCache.txt
@@ -6,10 +7,9 @@ cmake_install.cmake
 Makefile
 *.cmake
 _deps/
-# Binarys
-PrettyPath
-OSMParser
+Release/
 # Data
 data/edges.csv
 data/nodes.csv
 data/path.csv
+path.svg

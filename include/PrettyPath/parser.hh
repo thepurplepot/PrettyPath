@@ -1,0 +1,23 @@
+#include "graph.hh"
+#include <string>
+#include <sstream>
+#include <fstream>
+#pragma once
+
+using MapData = std::unordered_map<long, const Node*>; // Map node id to node
+
+class Parser {
+public:
+    Parser(std::string nodes_filename, std::string edges_filename);
+
+    static std::vector<node_id_t> parse_nodes(const std::string& edge_nodes_string);
+    static MapData read_map_data(Graph& graph);
+    static void write_path_to_py(const MapData& map_data, const Graph& graph, const std::vector<const Node*>& path, const std::string& filename);
+    static void clean_map_data(MapData& map_data);
+
+private:
+    static std::string m_nodes_filename;
+    static std::string m_edges_filename;
+    static double m_min_lat, m_max_lat, m_min_lon, m_max_lon;
+};
+

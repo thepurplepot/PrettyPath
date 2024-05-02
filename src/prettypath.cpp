@@ -80,6 +80,32 @@ void add_edge(Graph& graph, Node* node1, Node* node2, double length, double slop
     graph[node2].push_back(std::make_pair(node1, edge));
 }
 
+Node* find_nearby_node(const Node* node, const std::vector<const Node*> attempted_goals, const double variation, const Graph& graph) {
+    Node* nearby_node = nullptr;
+    double min_distance = std::numeric_limits<double>::max();
+
+    for (const auto& pair : graph) {
+        Node* potential_node = pair.first;
+        bool is_attempted = false;
+        for (const Node* goal : attempted_goals) {
+            if (potential_node == goal) {
+                is_attempted = true;
+                break;
+            }
+        }
+        if (is_attempted) {
+            continue;
+        }
+        double distance = node->distance_to(potential_node->latitude, potential_node->longitude);
+
+        if (distance < min_distance && distance >= variation) {
+            nearby_node = potential_node;
+            min_distance = distance;
+        }
+    }
+
+    return nearby_node;
+}
 
 std::vector<Node*> reconstruct_path(const std::unordered_map<Node*, Node*>& came_from, Node* current) {
     std::vector<Node*> path;
@@ -94,6 +120,9 @@ std::vector<Node*> reconstruct_path(const std::unordered_map<Node*, Node*>& came
 
 std::vector<Node*> a_star(const Graph& graph, Node* start, const Node* goal) {
     auto start_time = std::chrono::high_resolution_clock::now();
+    // List of goal nodes attempted
+    std::vector<const Node*> attempted_goals;
+    attempted_goals.push_back(goal);
     // Priority queue of nodes to visit, sorted by the lowest f_score
     std::priority_queue<std::pair<double, Node*>, std::vector<std::pair<double, Node*>>, std::greater<std::pair<double, Node*>>> open_set;
     open_set.push(std::make_pair(0, start));
@@ -113,11 +142,22 @@ std::vector<Node*> a_star(const Graph& graph, Node* start, const Node* goal) {
     }
     f_score[start] = start->distance_to(goal->latitude, goal->longitude);
 
-    while (!open_set.empty()) {
+    while (true) {
+        if(open_set.empty()) {
+            attempted_goals.push_back(find_nearby_node(goal, attempted_goals, 50, graph));
+            std::cout << "No path found, trying again with nearby goal\n";
+            std::cout << "New goal: " << goal->id_string << " at (" << goal->latitude << "," << goal->longitude << ")" << std::endl;
+            if(goal == nullptr) {
+                std::cerr << "Error: No nearby node found" << std::endl;
+                return {};
+            }
+            open_set.push(std::make_pair(0, start));
+            continue;
+        }
         Node* current = open_set.top().second; // Get the node in open_set having the lowest f_score
         open_set.pop(); // Remove the node from open_set
 
-        if (current == goal) {
+        if (current == attempted_goals.back()) {
             auto end_time = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
             std::cout << "Duration: " << duration/1000.f << " ms" << std::endl;
@@ -134,17 +174,11 @@ std::vector<Node*> a_star(const Graph& graph, Node* start, const Node* goal) {
             if (tentative_g_score < g_score[neighbor]) {
                 came_from[neighbor] = current;
                 g_score[neighbor] = tentative_g_score;
-                f_score[neighbor] = g_score[neighbor] + neighbor->distance_to(goal->latitude, goal->longitude);
+                f_score[neighbor] = g_score[neighbor] + neighbor->distance_to(attempted_goals.back()->latitude, attempted_goals.back()->longitude);
                 open_set.push(std::make_pair(f_score[neighbor], neighbor));
             }
         }
     }
-
-    auto end_time = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
-    std::cout << "Duration: " << duration/1000.f << " ms " << std::endl;
-    // TODO: Shift start node if no path is found and try again
-    return std::vector<Node*>();
 }
 
 void print_path(const std::vector<Node*>& path) {
@@ -210,7 +244,7 @@ void write_path_to_py(const MapData& map_data, const Graph& graph, const std::ve
     file.close();
 }
 
-std::vector<long> parse_geometry(const std::string& geometry) {
+std::vector<long> parse_nodes(const std::string& geometry) {
     std::vector<long> edge_nodes;
 
     std::stringstream ss(geometry);
@@ -317,7 +351,7 @@ MapData read_map_data(Graph& graph, const std::string& nodes_filename, const std
 
         // Get geometry of the edge
         std::getline(ss, field);
-        auto edge_nodes = parse_geometry(field);
+        auto edge_nodes = parse_nodes(field);
 
         if(map_data.find(source_node_id) == map_data.end() || map_data.find(target_node_id) == map_data.end()) {
             std::cerr << "Edge node not found in map data" << std::endl;
