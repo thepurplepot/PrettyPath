@@ -4,12 +4,15 @@ osmparser::Handler::~Handler() {
     std::cout << "Done parsing OSM data\n";
     write_nodes_file();
     write_edges_file();
+    write_tarns_file();
     std::cout << "Map bounds: " << m_map_min_lat << " -> " << m_map_max_lat << ", " << m_map_min_lon << " -> " << m_map_max_lon << std::endl;
     std::cout << "Cleaning up..." << std::endl;
     m_edges_file.flush();
     m_edges_file.close();
     m_nodes_file.flush();
     m_nodes_file.close();
+    m_tarns_file.flush();
+    m_tarns_file.close();
 }
 
 void osmparser::Handler::node(const osmium::Node& node) {
@@ -19,6 +22,27 @@ void osmparser::Handler::node(const osmium::Node& node) {
 }
 
 void osmparser::Handler::way(const osmium::Way& way) {
+    std::vector<osmium::object_id_type> node_ids;
+    //TODO cleanup
+    // Check for Tarns
+    std::string tarn_name = is_tarn(way.tags());
+    if(!tarn_name.empty()) {
+        for (const auto& node : way.nodes()) {
+            if (m_nodes.find(node.ref()) == m_nodes.end()) {
+                std::cerr << "Node " << node.ref() << " not found\n";
+                return; // Skip nodes not in the node list
+            }
+            // Check all way nodes are within lake district bounds otherwise exclude from data
+            auto location = m_nodes.at(node.ref()).location;
+            if(location.lat() < LakeDistrict.min_lat || location.lat() > LakeDistrict.max_lat || location.lon() < LakeDistrict.min_lon || location.lon() > LakeDistrict.max_lon) {
+                return;
+            }
+            node_ids.push_back(node.ref());
+        }
+        m_tarns[way.id()] = TarnData(tarn_name, node_ids);
+    }
+
+    // Check for walkable routes
     const bool walkable = is_walkable(way.tags());
     if (!walkable) {
         return; // Skip non-walkable ways
@@ -26,18 +50,23 @@ void osmparser::Handler::way(const osmium::Way& way) {
     const int car = get_cars(way.tags());
     const int diff = get_difficulty(way.tags());
     const osmium::NodeRefList& nodes = way.nodes();
-    std::vector<osmium::object_id_type> node_ids;
+
     if(nodes.size() < 2) {
         std::cerr << "Way " << way.id() << " has less than 2 nodes\n";
         return;
     }
-    for (size_t i = 0; i < nodes.size(); ++i) {
-        if(m_nodes.find(nodes[i].ref()) == m_nodes.end()) {
-            std::cerr << "Way node not in nodes" << nodes[i].ref() << " not found\n";
-            continue; // Skip nodes not in the node list
+    for (const auto& node: nodes) {
+        if(m_nodes.find(node.ref()) == m_nodes.end()) {
+            std::cerr << "Way node not in nodes" << node.ref() << " not found\n";
+            return; // Skip nodes not in the node list
         }
-        node_ids.push_back(nodes[i].ref());
-        m_nodes[nodes[i].ref()].ways++;
+        // Check all way nodes are within lake district bounds otherwise exclude from data
+        auto location = m_nodes.at(node.ref()).location;
+        if(location.lat() < LakeDistrict.min_lat || location.lat() > LakeDistrict.max_lat || location.lon() < LakeDistrict.min_lon || location.lon() > LakeDistrict.max_lon) {
+            return;
+        }
+        node_ids.push_back(node.ref());
+        m_nodes[node.ref()].ways++;
     }
     m_ways[way.id()] = WayData(walkable, car, diff, node_ids);
 }
@@ -65,7 +94,7 @@ void osmparser::Handler::read_elevation_data() {
 float osmparser::Handler::get_elevation(const double latitude, const double longitude) {
     if (latitude < m_ele_min_lat || latitude > m_ele_max_lat || longitude < m_ele_min_lon || longitude > m_ele_max_lon) {
         //std::cerr << "Out of bounds: " << latitude << ", " << longitude << "\n";
-        return 0;
+        return -std::numeric_limits<float>::infinity();
     }
     double adfGeoTransform[6];
     if (m_poDataset->GetGeoTransform(adfGeoTransform) == CE_None) {
@@ -83,6 +112,29 @@ float osmparser::Handler::get_elevation(const double latitude, const double long
     }
     std::cerr << "Failed to get GeoTransform\n";
     return 0;
+}
+
+// TODO: fix
+std::string osmparser::Handler::is_tarn(const osmium::TagList& tags) {
+    const char* natural = tags["natural"];
+    if (natural) {
+        if (std::strcmp(natural, "water") == 0) {
+            // std::cout << "Found water\n";
+            // for (const auto& tag : tags) {
+            //     std::cout << "Tag: " << tag.key() << " = " << tag.value() << std::endl;
+            // }
+            const char* water = tags["water"];
+            if (water) {
+                if (std::strcmp(water, "river") != 0) {
+                    const char* name = tags["name"];
+                    if (name) {
+                        return name;
+                    }
+                }
+            }
+        }
+    }
+    return std::string();
 }
 
 bool osmparser::Handler::is_walkable(const osmium::TagList& tags) {
@@ -168,7 +220,7 @@ void osmparser::Handler::write_nodes_file() {
 
 void osmparser::Handler::write_edges_file() {
     std::cout << "Writing edges..." << std::endl;
-    m_edges_file << "id,osm_id,source_id,target_id,length,ascent_slope,descent_slope,difficulty,cars,geometry\n";
+    m_edges_file << "id,osm_id,source_id,target_id,length,slope,difficulty,cars,geometry\n";
     m_edges_file << std::fixed << std::setprecision(6);
     for(const auto& way_pair : m_ways) {
         const osmium::object_id_type way_id = way_pair.first;
@@ -200,14 +252,14 @@ void osmparser::Handler::write_edges_file() {
                     descend_length += distance;
                 }
 
-                if((m_nodes.at(node.ref()).ways > 1 && node.ref() != source) || it == way_data.nodes.end() - 1){
+                if((m_nodes.at(node.ref()).ways > 1 || it == way_data.nodes.end() - 1) && node.ref() != source){
                     target = node.ref();
                     //TODO how to process elevation ??
-                    //const double slope = (ele_gain - ele_loss) / length;
                     const double ascent_slope = ascend_length > 0 ? ele_gain / ascend_length : 0;
                     const double descent_slope = descend_length > 0 ? ele_loss / descend_length : 0;
+                    const double slope = (ele_gain - ele_loss) / length;
                     const auto id = m_edge_counter++;
-                    m_edges_file << id << "," << way_id << "," << source << "," << target << "," << length << "," << ascent_slope << "," << descent_slope << "," << way_data.difficulty << "," << way_data.cars;
+                    m_edges_file << id << "," << way_id << "," << source << "," << target << "," << length << "," << slope << "," << way_data.difficulty << "," << way_data.cars;
                     for(auto it = edge_nodes.begin(); it != edge_nodes.end(); ++it) {
                         m_edges_file << "," << *it; // Store all nodes on the edge
                     }
@@ -225,4 +277,29 @@ void osmparser::Handler::write_edges_file() {
         }
     }
     std::cout << "Edges: " << m_edge_counter << std::endl;
+}
+
+osmium::Location osmparser::Handler::get_tarn_location(const std::vector<osmium::object_id_type>& nodes) {
+    double lat = 0, lon = 0;
+    for(const auto& node_id : nodes) {
+        const osmium::Location location = m_nodes.at(node_id).location;
+        lat += location.lat();
+        lon += location.lon();
+    }
+    return osmium::Location(lon / nodes.size(), lat / nodes.size());
+}
+
+void osmparser::Handler::write_tarns_file() {
+    std::cout << "Writing tarns..." << std::endl;
+    m_tarns_file << "osm_id,name,lat,lon,elevation\n";
+    m_tarns_file << std::fixed << std::setprecision(6);
+    for(const auto& tarn_pair : m_tarns) {
+        const osmium::object_id_type tarn_id = tarn_pair.first;
+        const TarnData& tarn_data = tarn_pair.second;
+        auto location = get_tarn_location(tarn_data.nodes);
+        auto elevation = get_elevation(location.lat(), location.lon());
+        m_tarn_counter++;
+        m_tarns_file << tarn_id << ",\"" << tarn_data.name << "\"," << location.lat() << "," << location.lon() << "," << elevation << "\n";   
+    }
+    std::cout << "Tarns: " << m_tarn_counter << std::endl;
 }

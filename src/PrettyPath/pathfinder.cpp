@@ -43,7 +43,8 @@ std::vector<const Node*> reconstruct_path(const std::unordered_map<const Node*, 
     return path;
 }
 
-void init(const Graph& graph, const Node* start, const Node* goal, std::unordered_map<const Node*, const Node*>& came_from, std::unordered_map<const Node*, double>& g_score, std::unordered_map<const Node*, double>& f_score, open_set_t& open_set) {
+void init(const Graph& graph, const Node* start, const Node* goal, std::unordered_map<const Node*, const Node*>& came_from, std::unordered_map<const Node*, double>& g_score, std::unordered_map<const Node*, double>& f_score, open_set_t& open_set, long& searched_nodes) {
+    searched_nodes = 0;
     open_set.push(std::make_pair(0, start));
 
     came_from.clear();
@@ -70,24 +71,42 @@ std::vector<const Node*> a_star(const Graph& graph, const Node* start, const Nod
     std::unordered_map<const Node*, const Node*> came_from; // Map of nodes to their parent nodes
     std::unordered_map<const Node*, double> g_score; // Cost from start to node
     std::unordered_map<const Node*, double> f_score; // Cost from start to goal through node
-    init(graph, start, goal, came_from, g_score, f_score, open_set);
+    long searched_nodes;
+    init(graph, start, current_goal, came_from, g_score, f_score, open_set, searched_nodes);
 
     while(true) {
         if(open_set.empty()) {
+            if (attempted_goals.size()  > 50) {
+                std::cout << "Error: Tried 100 different goal nodes, no path found! Returned best attempt." << std::endl;
+                double min_distance = std::numeric_limits<double>::max();
+                const Node* best_attempted_goal = nullptr;
+                for(const auto node_pair : came_from) {
+                    const Node* node = node_pair.first;
+                    const Node* parent = node_pair.second;
+                    double distance = node->distance_to(current_goal->get_location().first, current_goal->get_location().second);
+                    if(distance < min_distance) {
+                        min_distance = distance;
+                        best_attempted_goal = node;
+                    }
+                }
+                return reconstruct_path(came_from, best_attempted_goal);
+            }
+            std::cout << "No path found after searching " << searched_nodes << " nodes, trying again with nearby goal\n";
             const Node* nearby_goal = find_nearby_node(attempted_goals, 100, graph); // Find a nearby goal
-            const auto location = nearby_goal->get_location();
-            std::cout << "No path found, trying again with nearby goal\n";
-            std::cout << "New goal: " << nearby_goal->get_id() << " at (" << location.first << "," << location.second << ")" << std::endl;
             if(nearby_goal == nullptr) {
                 std::cerr << "Error: No nearby node found" << std::endl;
                 return {};
             }
-            init(graph, start, nearby_goal, came_from, g_score, f_score, open_set);
-            continue;
+            attempted_goals.push_back(nearby_goal);
+            const auto location = nearby_goal->get_location();
+            std::cout << "New goal: " << nearby_goal->get_id() << " at (" << location.first << "," << location.second << ")" << std::endl;
+            current_goal = nearby_goal;
+            init(graph, start, current_goal, came_from, g_score, f_score, open_set, searched_nodes);
         }
 
         const Node* current = open_set.top().second; // Get the node in open_set having the lowest f_score
         open_set.pop(); // Remove the node from open_set
+        searched_nodes++;
 
         if (current == current_goal) {
             auto end_time = std::chrono::high_resolution_clock::now();

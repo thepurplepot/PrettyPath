@@ -20,13 +20,14 @@ int main(int argc, char* argv[]) {
     std::string elevation_filename = "data/topography.tif";
     std::string edges_filename = "data/edges.csv";
     std::string nodes_filename = "data/nodes.csv";
+    std::string tarns_filename = "data/tarns.csv";
 
     handel_args(argc, argv, osm_filename, elevation_filename);
 
     osmium::io::File osm_file(osm_filename);
     osmium::io::Reader reader(osm_file);
 
-    osmparser::Handler handler(elevation_filename, edges_filename, nodes_filename);
+    osmparser::Handler handler(elevation_filename, edges_filename, nodes_filename, tarns_filename);
     osmium::apply(reader, handler);
 
     reader.close();

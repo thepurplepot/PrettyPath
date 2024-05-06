@@ -1,6 +1,7 @@
 #include "graph.hh"
 #include "parser.hh"
 #include "pathfinder.hh"
+#include "tarnrouter.hh"
 #include <getopt.h>
 
 
@@ -33,15 +34,34 @@ int main(int argc, char** argv) {
     Parser parser(nodes_filename, edges_filename);
     Graph graph;
     MapData map = parser.read_map_data(graph);
-    auto start = graph.find_closest_node(start_lat, start_lon);
-    std::cout << "Start node: " << start.first->get_id() << " error = " << start.second << " m" << std::endl;
-    auto goal = graph.find_closest_node(goal_lat, goal_lon);
-    std::cout << "Goal node: " << goal.first->get_id() << " error = " << goal.second << " m" << std::endl;
-    auto path = Pathfinder::a_star(graph, start.first, goal.first);
-    if (path.empty()) {
+    auto tarns = parser.read_tarn_data("data/tarns.csv");
+    auto filtered_tarns = TarnRouter::filter_tarns(tarns, 300);
+    std::cout << "Filtered tarns:" << std::endl;
+    for (auto tarn : filtered_tarns) {
+        std::cout << tarn.name << std::endl;
+    }
+    auto path = TarnRouter::find_shortest_path_between_tarns(graph, filtered_tarns);
+    auto tarn_path = path.first;
+    if (path.first.empty()) {
         std::cout << "No path found" << std::endl;
     } else {
-        parser.write_path_to_py(map, graph, path, path_filename);
+        std::cout << "Path length: " << path.second.size() << std::endl;
+        std::cout << "Tarn order:" << std::endl;
+        for(auto tarn : tarn_path) {
+            std::cout << tarn.name << std::endl;
+        }
+        parser.write_path_to_py(map, graph, path.second, path_filename);
     }
+
+    // auto start = graph.find_closest_node(start_lat, start_lon);
+    // std::cout << "Start node: " << start.first->get_id() << " error = " << start.second << " m" << std::endl;
+    // auto goal = graph.find_closest_node(goal_lat, goal_lon);
+    // std::cout << "Goal node: " << goal.first->get_id() << " error = " << goal.second << " m" << std::endl;
+    // auto path = Pathfinder::a_star(graph, start.first, goal.first);
+    // if (path.empty()) {
+    //     std::cout << "No path found" << std::endl;
+    // } else {
+    //     parser.write_path_to_py(map, graph, path, path_filename);
+    // }
     parser.clean_map_data(map);
 }

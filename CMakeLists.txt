@@ -65,6 +65,7 @@ set (
   src/PrettyPath/parser.cpp
   src/PrettyPath/graph.cpp
   src/PrettyPath/pathfinder.cpp
+  src/PrettyPath/tarnrouter.cpp
 )
 
 add_executable(${PROJECT_NAME} ${PrettyPath_sources})

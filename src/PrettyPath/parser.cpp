@@ -4,10 +4,10 @@
 // Allocate memory for static variables
 std::string Parser::m_nodes_filename;
 std::string Parser::m_edges_filename;
-double Parser::m_min_lat;
-double Parser::m_max_lat;
-double Parser::m_min_lon;
-double Parser::m_max_lon;
+double Parser::m_min_lat = std::numeric_limits<double>::max();
+double Parser::m_max_lat = -std::numeric_limits<double>::max();
+double Parser::m_min_lon = std::numeric_limits<double>::max();
+double Parser::m_max_lon = -std::numeric_limits<double>::max();
 
 Parser::Parser(std::string nodes_filename, std::string edges_filename) {
     m_nodes_filename = nodes_filename;
@@ -119,8 +119,11 @@ MapData Parser::read_map_data(Graph& graph) {
         auto edge_nodes = parse_nodes(field);
 
         if(map_data.find(source_node_id) == map_data.end() || map_data.find(target_node_id) == map_data.end()) {
-            std::cerr << "Edge node not found in map data" << std::endl;
+            std::cerr << "Error: Edge node not found in map data for edge: " << osm_id << std::endl;
             continue;
+        }
+        if(source_node_id == target_node_id) {
+            std::cerr << "Error: Source and Target node of edge: " << osm_id << " are the same!" << std::endl;
         }
         const Node* start_node = map_data[source_node_id];
         const Node* target_node = map_data[target_node_id];
@@ -133,6 +136,51 @@ MapData Parser::read_map_data(Graph& graph) {
     std::cout << "Latitude range: " << m_min_lat << " -> " << m_max_lat << std::endl;
     std::cout << "Longitude range: " << m_min_lon << " -> " << m_max_lon << std::endl;
     return map_data;
+}
+
+std::vector<const TarnData> Parser::read_tarn_data(const std::string& filename) {
+    std::vector<const TarnData> tarn_data;
+
+    std::ifstream tarns_file(filename);
+    if (!tarns_file.is_open()) {
+        std::cerr << "Error: Could not open file " << filename << std::endl;
+        return tarn_data;
+    }
+
+    std::string line;
+    std::getline(tarns_file, line); // Skip the header
+    while (std::getline(tarns_file, line)) {
+        std::stringstream ss(line);
+        std::string field;
+
+        // Get the osm_id
+        std::getline(ss, field, ',');
+        long osm_id = std::stol(field);
+
+        // Get the name
+        std::getline(ss, field, '"');
+        std::getline(ss, field, '"');
+        std::string name = field;
+        std::getline(ss, field, ',');
+
+        // Get the latitude
+        std::getline(ss, field, ',');
+        double latitude = std::stod(field);
+
+        // Get the longitude
+        std::getline(ss, field, ',');
+        double longitude = std::stod(field);
+
+        // Get the elevation
+        std::getline(ss, field);
+        float elevation = std::stof(field);
+
+        tarn_data.push_back(TarnData(name, latitude, longitude, osm_id, elevation));
+    }
+
+    tarns_file.close();
+
+    return tarn_data;
 }
 
 void Parser::write_path_to_py(const MapData& map_data, const Graph& graph, const std::vector<const Node*>& path, const std::string& filename) {
@@ -151,9 +199,9 @@ void Parser::write_path_to_py(const MapData& map_data, const Graph& graph, const
         for (const auto& edge_pair : graph.get_neighbours(node)) {
             if (edge_pair.first == next_node) {
                 Edge edge = edge_pair.second;
-                if (edge.get_difficulty() != 0) { //DEBUG
-                    std::cerr << "Warning: Difficulty is not 0 for " << edge.get_osm_id() << std::endl;
-                }
+                // if (edge.get_difficulty() != 0) { //DEBUG
+                //     std::cerr << "Warning: Difficulty is not 0 for " << edge.get_osm_id() << std::endl;
+                // }
                 // Check if the edge is in the correct direction
                 edge.reverse_if_needed(node->get_id());
                 auto edge_nodes = edge.get_edge_nodes();

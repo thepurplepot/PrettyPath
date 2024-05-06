@@ -12,4 +12,5 @@ Release/
 data/edges.csv
 data/nodes.csv
 data/path.csv
+data/tarns.csv
 path.svg

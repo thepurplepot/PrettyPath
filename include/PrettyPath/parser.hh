@@ -12,6 +12,7 @@ public:
 
     static std::vector<node_id_t> parse_nodes(const std::string& edge_nodes_string);
     static MapData read_map_data(Graph& graph);
+    static std::vector<const TarnData> read_tarn_data(const std::string& filename);
     static void write_path_to_py(const MapData& map_data, const Graph& graph, const std::vector<const Node*>& path, const std::string& filename);
     static void clean_map_data(MapData& map_data);
 

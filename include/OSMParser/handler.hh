@@ -8,9 +8,17 @@
 #pragma once
 
 namespace osmparser {
+
+const struct {
+    double min_lat = 54.2;
+    double max_lat = 54.7;
+    double min_lon = -3.5;
+    double max_lon = -2.5;
+} LakeDistrict;
+
 class Handler : public osmium::handler::Handler {
 public:
-    Handler(std::string data_filename, std::string edges_filename, std::string nodes_filename) : m_elevation_filename(data_filename), m_edges_file(edges_filename), m_nodes_file(nodes_filename) {
+    Handler(std::string data_filename, std::string edges_filename, std::string nodes_filename, std::string tarns_filename) : m_elevation_filename(data_filename), m_edges_file(edges_filename), m_nodes_file(nodes_filename), m_tarns_file(tarns_filename) {
         std::cout << "Reading elevation data..." << std::endl;
         read_elevation_data();
         std::cout << "Reading OSM data...\n";
@@ -23,11 +31,14 @@ public:
 private:
     void read_elevation_data();
     float get_elevation(const double latitude, const double longitude);
+    std::string is_tarn(const osmium::TagList& tags);
     bool is_walkable(const osmium::TagList& tags);
     int get_cars(const osmium::TagList& tags);
     int get_difficulty(const osmium::TagList& tags);
     void write_nodes_file();
     void write_edges_file();
+    void write_tarns_file();
+    osmium::Location get_tarn_location(const std::vector<osmium::object_id_type>& nodes);
 
 private:
     struct NodeData {
@@ -44,16 +55,25 @@ private:
         int cars, difficulty;
         std::vector<osmium::object_id_type> nodes;
     };
+    struct TarnData {
+        TarnData() : name(""), nodes(std::vector<osmium::object_id_type>()) {}
+        TarnData(std::string name, std::vector<osmium::object_id_type> nodes) : name(name), nodes(nodes) {}
+        std::string name;
+        std::vector<osmium::object_id_type> nodes;
+    };
 
 private:
     std::string m_elevation_filename;
     GDALDataset* m_poDataset;
     std::ofstream m_edges_file;
     std::ofstream m_nodes_file;
+    std::ofstream m_tarns_file;
     std::unordered_map<osmium::object_id_type, NodeData> m_nodes;
     long m_node_counter = 0;
+    std::unordered_map<osmium::object_id_type, TarnData> m_tarns;
     std::unordered_map<osmium::object_id_type, WayData> m_ways;
     long m_edge_counter = 0;
+    long m_tarn_counter = 0;
     double m_ele_min_lon, m_map_min_lon;
     double m_ele_max_lon, m_map_max_lon;
     double m_ele_min_lat, m_map_min_lat;

@@ -105,3 +105,12 @@ public:
 private:
     graph_t m_graph;
 };
+
+struct TarnData {
+    TarnData() : name(""), latitude(0), longitude(0), osm_id(0), elevation(0) {}
+    TarnData(std::string name, double latitude, double longitude, long osm_id, float elevation) : name(name), latitude(latitude), longitude(longitude), osm_id(osm_id), elevation(elevation) {}
+    std::string name;
+    double latitude, longitude;
+    long osm_id;
+    float elevation;
+};
