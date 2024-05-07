@@ -23,41 +23,22 @@ void osmparser::Handler::node(const osmium::Node& node) {
 
 void osmparser::Handler::way(const osmium::Way& way) {
     std::vector<osmium::object_id_type> node_ids;
-    //TODO cleanup
-    // Check for Tarns
+
     std::string tarn_name = is_tarn(way.tags());
-    if(!tarn_name.empty()) {
-        for (const auto& node : way.nodes()) {
-            if (m_nodes.find(node.ref()) == m_nodes.end()) {
-                std::cerr << "Node " << node.ref() << " not found\n";
-                return; // Skip nodes not in the node list
-            }
-            // Check all way nodes are within lake district bounds otherwise exclude from data
-            auto location = m_nodes.at(node.ref()).location;
-            if(location.lat() < LakeDistrict.min_lat || location.lat() > LakeDistrict.max_lat || location.lon() < LakeDistrict.min_lon || location.lon() > LakeDistrict.max_lon) {
-                return;
-            }
-            node_ids.push_back(node.ref());
-        }
-        m_tarns[way.id()] = TarnData(tarn_name, node_ids);
-    }
-
-    // Check for walkable routes
     const bool walkable = is_walkable(way.tags());
-    if (!walkable) {
-        return; // Skip non-walkable ways
-    }
-    const int car = get_cars(way.tags());
-    const int diff = get_difficulty(way.tags());
-    const osmium::NodeRefList& nodes = way.nodes();
 
-    if(nodes.size() < 2) {
+    if (!walkable && tarn_name.empty()) {
+        return; // Skip all non tarns and non-walkable ways
+    }
+
+    if (way.nodes().size() < 2) {
         std::cerr << "Way " << way.id() << " has less than 2 nodes\n";
         return;
     }
-    for (const auto& node: nodes) {
-        if(m_nodes.find(node.ref()) == m_nodes.end()) {
-            std::cerr << "Way node not in nodes" << node.ref() << " not found\n";
+
+    for (const auto& node : way.nodes()) {
+        if (m_nodes.find(node.ref()) == m_nodes.end()) {
+            std::cerr << "Node " << node.ref() << " not found\n";
             return; // Skip nodes not in the node list
         }
         // Check all way nodes are within lake district bounds otherwise exclude from data
@@ -66,8 +47,20 @@ void osmparser::Handler::way(const osmium::Way& way) {
             return;
         }
         node_ids.push_back(node.ref());
-        m_nodes[node.ref()].ways++;
+        if (walkable) {
+            // Only increment ways for walkable ways
+            m_nodes[node.ref()].ways++;
+        }
     }
+
+    if(!tarn_name.empty()) {
+        m_tarns[way.id()] = TarnData(tarn_name, node_ids);
+        return;
+    }
+
+    const int car = get_cars(way.tags());
+    const int diff = get_difficulty(way.tags());
+
     m_ways[way.id()] = WayData(walkable, car, diff, node_ids);
 }
 
@@ -279,27 +272,58 @@ void osmparser::Handler::write_edges_file() {
     std::cout << "Edges: " << m_edge_counter << std::endl;
 }
 
-osmium::Location osmparser::Handler::get_tarn_location(const std::vector<osmium::object_id_type>& nodes) {
-    double lat = 0, lon = 0;
-    for(const auto& node_id : nodes) {
+std::pair<const double, const double> osmparser::Handler::latlon_to_utm(const double lat, const double lon) {
+    // Constants
+    const double R = 6371e3;  // Earth's radius in meters
+    const double TO_RAD = M_PI / 180.0;  // Conversion factor from degrees to radians
+
+    // Convert latitude and longitude to radians
+    double lat_rad = lat * TO_RAD;
+    double lon_rad = lon * TO_RAD;
+
+    // Convert latitude and longitude to meters
+    const double x = R * lon_rad * cos(lat_rad);
+    const double y = R * lat_rad;
+
+    return std::make_pair(x, y);
+}
+
+std::pair<osmium::Location, double> osmparser::Handler::get_tarn_location_and_area(const std::vector<osmium::object_id_type>& nodes) {
+    double lat = 0, lon = 0, area = 0;
+    std::vector<std::pair<const double, const double>> utm_coords;
+
+    for(size_t i = 0; i < nodes.size(); i++) {
+        const osmium::object_id_type node_id = nodes[i];
         const osmium::Location location = m_nodes.at(node_id).location;
         lat += location.lat();
         lon += location.lon();
+
+        utm_coords.push_back(latlon_to_utm(location.lat(), location.lon()));
     }
-    return osmium::Location(lon / nodes.size(), lat / nodes.size());
+
+    for (size_t i = 0; i < nodes.size(); i++) {
+        const auto& p1 = utm_coords[i];
+        const auto& p2 = utm_coords[(i + 1) % nodes.size()];
+        area += p1.first * p2.second - p2.first * p1.second;
+    }
+    area = std::abs(area) / 2.f;
+
+    return std::make_pair(osmium::Location(lon / nodes.size(), lat / nodes.size()), area);
 }
 
 void osmparser::Handler::write_tarns_file() {
-    std::cout << "Writing tarns..." << std::endl;
-    m_tarns_file << "osm_id,name,lat,lon,elevation\n";
-    m_tarns_file << std::fixed << std::setprecision(6);
-    for(const auto& tarn_pair : m_tarns) {
-        const osmium::object_id_type tarn_id = tarn_pair.first;
-        const TarnData& tarn_data = tarn_pair.second;
-        auto location = get_tarn_location(tarn_data.nodes);
-        auto elevation = get_elevation(location.lat(), location.lon());
-        m_tarn_counter++;
-        m_tarns_file << tarn_id << ",\"" << tarn_data.name << "\"," << location.lat() << "," << location.lon() << "," << elevation << "\n";   
+        std::cout << "Writing tarns..." << std::endl;
+        m_tarns_file << "osm_id,name,lat,lon,elevation,area\n";
+        m_tarns_file << std::fixed << std::setprecision(6);
+        for(const auto& tarn_pair : m_tarns) {
+            const osmium::object_id_type tarn_id = tarn_pair.first;
+            const TarnData& tarn_data = tarn_pair.second;
+            osmium::Location location;
+            double area;
+            std::tie(location, area) = get_tarn_location_and_area(tarn_data.nodes);
+            auto elevation = get_elevation(location.lat(), location.lon());
+            m_tarn_counter++;
+            m_tarns_file << tarn_id << ",\"" << tarn_data.name << "\"," << location.lat() << "," << location.lon() << "," << elevation << "," << std::round(area) << "\n";   
+        }
+        std::cout << "Tarns: " << m_tarn_counter << std::endl;
     }
-    std::cout << "Tarns: " << m_tarn_counter << std::endl;
-}

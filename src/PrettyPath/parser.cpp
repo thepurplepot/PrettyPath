@@ -175,7 +175,11 @@ std::vector<const TarnData> Parser::read_tarn_data(const std::string& filename) 
         std::getline(ss, field);
         float elevation = std::stof(field);
 
-        tarn_data.push_back(TarnData(name, latitude, longitude, osm_id, elevation));
+        // Get the area
+        std::getline(ss, field, ',');
+        unsigned long area = std::stoul(field);
+
+        tarn_data.push_back(TarnData(name, latitude, longitude, osm_id, elevation, area));
     }
 
     tarns_file.close();

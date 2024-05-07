@@ -38,7 +38,8 @@ private:
     void write_nodes_file();
     void write_edges_file();
     void write_tarns_file();
-    osmium::Location get_tarn_location(const std::vector<osmium::object_id_type>& nodes);
+    std::pair<osmium::Location, double> get_tarn_location_and_area(const std::vector<osmium::object_id_type>& nodes);
+    std::pair<const double, const double> latlon_to_utm(const double lat, const double lon);
 
 private:
     struct NodeData {
