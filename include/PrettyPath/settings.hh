@@ -8,3 +8,8 @@
 #define MAX_SLOPE 3.f
 
 #define COST(length, slope, cars, difficulty) (LENGTH_WEIGHT * length + ELEVATION_WEIGHT * (slope + MAX_SLOPE) + CARS_WEIGHT * (cars + 1) + DIFFICULTY_WEIGHT * (difficulty + 1))
+
+
+#define MINIMUM_TARN_ELEVATION 300
+#define MAXIMUM_TARN_ELEVATION 800
+#define MINIMUM_TARN_AREA 40

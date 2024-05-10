@@ -109,6 +109,11 @@ private:
 struct TarnData {
     TarnData() : name(""), latitude(0), longitude(0), osm_id(0), elevation(0), area(0) {}
     TarnData(std::string name, double latitude, double longitude, long osm_id, float elevation, unsigned long area) : name(name), latitude(latitude), longitude(longitude), osm_id(osm_id), elevation(elevation), area(area) {}
+    std::string name_without_spaces() {
+        std::string name_without_spaces = name;
+        std::replace(name_without_spaces.begin(), name_without_spaces.end(), ' ', '_');
+        return name_without_spaces;
+    }
     std::string name;
     double latitude, longitude;
     long osm_id;

@@ -35,11 +35,12 @@ int main(int argc, char** argv) {
     Graph graph;
     MapData map = parser.read_map_data(graph);
     auto tarns = parser.read_tarn_data("data/tarns.csv");
-    auto filtered_tarns = TarnRouter::filter_tarns(tarns, 300);
+    auto filtered_tarns = TarnRouter::filter_tarns(tarns, MINIMUM_TARN_ELEVATION, MINIMUM_TARN_AREA);
     std::cout << "Filtered tarns:" << std::endl;
     for (auto tarn : filtered_tarns) {
-        std::cout << tarn.name << std::endl;
+        std::cout << "\"" << tarn.name << "\"" << " Elevation: " << tarn.elevation << " m Area: " << tarn.area << " m^2" << std::endl;
     }
+    std::cout << std::endl;
     auto path = TarnRouter::find_shortest_path_between_tarns(graph, filtered_tarns);
     auto tarn_path = path.first;
     if (path.first.empty()) {
@@ -47,10 +48,11 @@ int main(int argc, char** argv) {
     } else {
         std::cout << "Path length: " << path.second.size() << std::endl;
         std::cout << "Tarn order:" << std::endl;
-        for(auto tarn : tarn_path) {
-            std::cout << tarn.name << std::endl;
+        for(auto pair : tarn_path) {
+            auto tarn = pair.first;
+            std::cout << tarn.name << " at (" << tarn.latitude << ", " << tarn.longitude << ")" << std::endl;
         }
-        parser.write_path_to_py(map, graph, path.second, path_filename);
+        parser.write_tarn_paths(map, graph, path, "data/path/path");
     }
 
     // auto start = graph.find_closest_node(start_lat, start_lon);

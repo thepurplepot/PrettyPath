@@ -172,11 +172,11 @@ std::vector<const TarnData> Parser::read_tarn_data(const std::string& filename) 
         double longitude = std::stod(field);
 
         // Get the elevation
-        std::getline(ss, field);
+        std::getline(ss, field, ',');
         float elevation = std::stof(field);
 
         // Get the area
-        std::getline(ss, field, ',');
+        std::getline(ss, field);
         unsigned long area = std::stoul(field);
 
         tarn_data.push_back(TarnData(name, latitude, longitude, osm_id, elevation, area));
@@ -198,6 +198,10 @@ void Parser::write_path_to_py(const MapData& map_data, const Graph& graph, const
     for (int i = 1; i < path.size(); i++) {
         const Node* node = path[i - 1];
         const Node* next_node = path[i];
+        if(node == nullptr) {
+            std::cerr << "Error: Node is null" << std::endl; 
+            continue;
+        }
 
         // Find the edge between node and next_node
         for (const auto& edge_pair : graph.get_neighbours(node)) {
@@ -242,6 +246,26 @@ void Parser::write_path_to_py(const MapData& map_data, const Graph& graph, const
     std::cout << "Wrote " << node_counter << " nodes to " << filename << std::endl;
     std::cout << "Total length: " << total_length/1000.f << " km" << std::endl;
 }
+
+void Parser::write_tarn_paths(const MapData& map_data, const Graph& graph, const std::pair<std::vector<std::pair<const TarnData, size_t>>, std::vector<const Node*>>& tarns_path, const std::string& file_prefix) {
+    auto tarns = tarns_path.first;
+    auto path = tarns_path.second;
+    size_t path_start = 0;
+    size_t edges_written = 0;
+    for(size_t i = 0; i < tarns.size() - 1; i++) {
+        auto path_length = tarns[i].second;
+        edges_written += path_length;
+        auto start_tarn = tarns[i].first;
+        auto end_tarn = tarns[(i+1)%tarns.size()].first;
+        std::cout << "Writing path from " << start_tarn.name << " to " << end_tarn.name << " with " << path_length << " nodes" << std::endl;
+        std::string filename = file_prefix + "_" + start_tarn.name_without_spaces() + "_" + end_tarn.name_without_spaces() + ".csv";
+        std::vector<const Node*> sub_path(path.begin() + path_start, path.begin() + path_start + path_length);
+        path_start = path_length;
+        write_path_to_py(map_data, graph, sub_path, filename);
+    }
+    std::cout << "Wrote " << edges_written << " edges to files, total in path is: " << path.size() << std::endl;
+}
+
 
 void Parser::clean_map_data(MapData& map_data) {
     for (auto& pair : map_data) {

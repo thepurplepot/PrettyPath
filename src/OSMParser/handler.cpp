@@ -124,6 +124,11 @@ std::string osmparser::Handler::is_tarn(const osmium::TagList& tags) {
                         return name;
                     }
                 }
+            } else {
+                const char* name = tags["name"];
+                if (name) {
+                    return name;
+                }
             }
         }
     }
