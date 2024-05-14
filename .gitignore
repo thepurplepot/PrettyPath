@@ -8,6 +8,7 @@ Makefile
 *.cmake
 _deps/
 Release/
+build/
 # Data
 data/edges.csv
 data/nodes.csv
