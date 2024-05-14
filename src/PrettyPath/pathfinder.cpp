@@ -1,14 +1,15 @@
 #include <queue>
-#include "graph.hh"
+#include <unordered_set>
+#include <stack>
 #include "pathfinder.hh"
 
 namespace Pathfinder {
 
-const Node* find_nearby_node(const std::vector<const Node*> attempted_goals, const double variation, const Graph& graph) {
+std::pair<double, const Node*> find_nearby_node(const std::vector<const Node*> attempted_goals, const double variation, const Graph& graph) {
     const Node* nearby_node = nullptr;
     double min_distance = std::numeric_limits<double>::max();
-    const Node* prev_goal = attempted_goals.back();
-    const auto prev_goal_location = prev_goal->get_location();
+    const Node* first_goal = attempted_goals.front();
+    const auto first_goal_location = first_goal->get_location();
 
     graph.apply_to_nodes([&](const Node* node) {
         bool is_attempted = false;
@@ -21,7 +22,7 @@ const Node* find_nearby_node(const std::vector<const Node*> attempted_goals, con
         if (is_attempted) {
             return;
         }
-        double distance = node->distance_to(prev_goal_location.first, prev_goal_location.second);
+        double distance = node->distance_to(first_goal_location.first, first_goal_location.second);
 
         if (distance < min_distance && distance >= variation) {
             nearby_node = node;
@@ -29,7 +30,35 @@ const Node* find_nearby_node(const std::vector<const Node*> attempted_goals, con
         }
     });
 
-    return nearby_node;
+    return std::make_pair(min_distance, nearby_node);
+}
+
+std::pair<double, const Node*> find_nearby_connected_node(const Node* const desired, const Node* connected_node, const double variation, const Graph& graph) {
+    const auto desired_location = desired->get_location();
+    const Node* nearby_node = nullptr;
+    double min_distance = std::numeric_limits<double>::max();
+    std::vector<const Node*> attempted_nodes;
+
+    for(double radius = variation; radius < 10 * variation; radius += variation) {
+        graph.apply_to_nodes([&](const Node* node) {
+            if(std::find(attempted_nodes.begin(), attempted_nodes.end(), node) != attempted_nodes.end()) {
+                return;
+            }
+            double distance = node->distance_to(desired_location.first, desired_location.second);
+            if (distance < radius && distance < min_distance) {
+                attempted_nodes.push_back(node);
+                if (is_connected(graph, node, connected_node)) {
+                    nearby_node = node;
+                    min_distance = distance;
+                }
+            }
+        });
+        if (nearby_node != nullptr) {
+            break;
+        }
+    }
+    
+    return std::make_pair(min_distance, nearby_node);
 }
 
 std::vector<const Node*> reconstruct_path(const std::unordered_map<const Node*, const Node*>& came_from, const Node* current) {
@@ -59,12 +88,67 @@ void init(const Graph& graph, const Node* start, const Node* goal, std::unordere
     f_score[start] = start->distance_to(goal->get_location().first, goal->get_location().second);
 }
 
-using open_set_t = std::priority_queue<std::pair<double, const Node*>, std::vector<std::pair<double, const Node*>>, std::greater<std::pair<double, const Node*>>>;
+bool is_connected(const Graph& graph, const Node* start, const Node* goal) {
+    // DFS
+    std::unordered_set<const Node*> visited;
+    std::stack<const Node*> stack;
+    stack.push(start);
+    while (!stack.empty()) {
+        const Node* node = stack.top();
+        stack.pop();
+        if (node == goal) {
+            return true;
+        }
+        if (!visited.count(node)) {
+            visited.insert(node);
+            for (const auto neighbour : graph.get_neighbours(node)) {
+                auto neighbour_node = neighbour.first;
+                stack.push(neighbour_node);
+            }
+        }
+    }
+    return false;
+}
+
+void find_connected_start_and_goal(const Graph& graph, const Node*& start, const Node*& goal) {
+    size_t attempts = 0;
+    const double variation = 50;
+    const Node* new_start = nullptr;
+    std::vector<const Node*> attempted_goals = {goal};
+    double goal_error = 0;
+
+    while(new_start == nullptr && attempts < 10) {
+        auto start_node = find_nearby_connected_node(start, goal, variation, graph);
+        new_start = start_node.second;
+        if(new_start != nullptr) {
+            start = new_start;
+            const double error = start_node.first + goal_error;
+            std::cout << "Total distance error: " << error << " after " << attempts << " attempts" << std::endl;
+            return;
+        }
+        auto goal_node = find_nearby_node(attempted_goals, variation, graph);
+        goal = goal_node.second;
+        if(goal == nullptr) {
+            std::cerr << "Error: No nearby goal node found!" << std::endl;
+            return;
+        }
+        goal_error = goal_node.first;
+        attempted_goals.push_back(goal);
+        attempts++;
+    }
+    
+    std::cerr << "Error: No connection between start and goal found!" << std::endl;
+}
 
 std::vector<const Node*> a_star(const Graph& graph, const Node* start, const Node* goal) {
     auto start_time = std::chrono::high_resolution_clock::now();
     const Node* current_goal = goal;
-    std::vector<const Node*> attempted_goals = {goal}; // List of goal nodes attempted
+    const Node* current_start = start;
+
+    if(!is_connected(graph, start, goal)) {
+        std::cout << "Start and goal are not connected" << std::endl;
+        find_connected_start_and_goal(graph, current_start, current_goal);
+    }
     // Priority queue of nodes to visit, sorted by the lowest f_score
     open_set_t open_set;
 
@@ -72,36 +156,12 @@ std::vector<const Node*> a_star(const Graph& graph, const Node* start, const Nod
     std::unordered_map<const Node*, double> g_score; // Cost from start to node
     std::unordered_map<const Node*, double> f_score; // Cost from start to goal through node
     long searched_nodes;
-    init(graph, start, current_goal, came_from, g_score, f_score, open_set, searched_nodes);
+    init(graph, current_start, current_goal, came_from, g_score, f_score, open_set, searched_nodes);
 
     while(true) {
         if(open_set.empty()) {
-            if (attempted_goals.size()  > 50) {
-                std::cout << "Error: Tried 100 different goal nodes, no path found! Returned best attempt." << std::endl;
-                double min_distance = std::numeric_limits<double>::max();
-                const Node* best_attempted_goal = nullptr;
-                for(const auto node_pair : came_from) {
-                    const Node* node = node_pair.first;
-                    const Node* parent = node_pair.second;
-                    double distance = node->distance_to(current_goal->get_location().first, current_goal->get_location().second);
-                    if(distance < min_distance) {
-                        min_distance = distance;
-                        best_attempted_goal = node;
-                    }
-                }
-                return reconstruct_path(came_from, best_attempted_goal);
-            }
-            std::cout << "No path found after searching " << searched_nodes << " nodes, trying again with nearby goal\n";
-            const Node* nearby_goal = find_nearby_node(attempted_goals, 100, graph); // Find a nearby goal
-            if(nearby_goal == nullptr) {
-                std::cerr << "Error: No nearby node found" << std::endl;
-                return {};
-            }
-            attempted_goals.push_back(nearby_goal);
-            const auto location = nearby_goal->get_location();
-            std::cout << "New goal: " << nearby_goal->get_id() << " at (" << location.first << "," << location.second << ")" << std::endl;
-            current_goal = nearby_goal;
-            init(graph, start, current_goal, came_from, g_score, f_score, open_set, searched_nodes);
+            std::cerr << "Error: No path found after searching " << searched_nodes << " nodes" << std::endl;
+            return {};
         }
 
         const Node* current = open_set.top().second; // Get the node in open_set having the lowest f_score

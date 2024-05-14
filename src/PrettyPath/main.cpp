@@ -5,7 +5,7 @@
 #include <getopt.h>
 
 
-void handle_option(int argc, char** argv, std::string& nodes_filename, std::string& edges_filename, std::string& path_filename, double& start_lat, double& start_lon, double& goal_lat, double& goal_lon) {
+void handle_option(int argc, char** argv, std::string& nodes_filename, std::string& edges_filename, std::string& path_dir, double& start_lat, double& start_lon, double& goal_lat, double& goal_lon) {
     int opt;
     while((opt = getopt(argc, argv, "s:g:")) != -1) {
         switch(opt) {
@@ -27,15 +27,16 @@ void handle_option(int argc, char** argv, std::string& nodes_filename, std::stri
 int main(int argc, char** argv) {
     std::string nodes_filename = "data/nodes.csv";
     std::string edges_filename = "data/edges.csv";
-    std::string path_filename = "data/path.csv";
+    std::string tarns_filename = "data/tarns.csv";
+    std::string path_dir = "data/path/";
     double start_lat = 54.4582, start_lon = -3.0245, goal_lat = 54.4237, goal_lon = -3.0034;
-    handle_option(argc, argv, nodes_filename, edges_filename, path_filename, start_lat, start_lon, goal_lat, goal_lon);
+    handle_option(argc, argv, nodes_filename, edges_filename, path_dir, start_lat, start_lon, goal_lat, goal_lon);
     
     Parser parser(nodes_filename, edges_filename);
     Graph graph;
     MapData map = parser.read_map_data(graph);
-    auto tarns = parser.read_tarn_data("data/tarns.csv");
-    auto filtered_tarns = TarnRouter::filter_tarns(tarns, MINIMUM_TARN_ELEVATION, MINIMUM_TARN_AREA);
+    auto tarns = parser.read_tarn_data(tarns_filename);
+    auto filtered_tarns = TarnRouter::filter_tarns(tarns, MINIMUM_TARN_ELEVATION, MAXIMUM_TARN_ELEVATION, MINIMUM_TARN_AREA, MINIMUM_LATITUDE, MAXIMUM_LATITUDE, MINIMUM_LONGITUDE, MAXIMUM_LONGITUDE);
     std::cout << "Filtered tarns:" << std::endl;
     for (auto tarn : filtered_tarns) {
         std::cout << "\"" << tarn.name << "\"" << " Elevation: " << tarn.elevation << " m Area: " << tarn.area << " m^2" << std::endl;
@@ -46,24 +47,13 @@ int main(int argc, char** argv) {
     if (path.first.empty()) {
         std::cout << "No path found" << std::endl;
     } else {
-        std::cout << "Path length: " << path.second.size() << std::endl;
+        std::cout << "Total path length: " << Pathfinder::get_path_length(path.second) << " m" << std::endl;
         std::cout << "Tarn order:" << std::endl;
         for(auto pair : tarn_path) {
             auto tarn = pair.first;
             std::cout << tarn.name << " at (" << tarn.latitude << ", " << tarn.longitude << ")" << std::endl;
         }
-        parser.write_tarn_paths(map, graph, path, "data/path/path");
+        parser.write_tarn_paths(map, graph, path, "data/path/");
     }
-
-    // auto start = graph.find_closest_node(start_lat, start_lon);
-    // std::cout << "Start node: " << start.first->get_id() << " error = " << start.second << " m" << std::endl;
-    // auto goal = graph.find_closest_node(goal_lat, goal_lon);
-    // std::cout << "Goal node: " << goal.first->get_id() << " error = " << goal.second << " m" << std::endl;
-    // auto path = Pathfinder::a_star(graph, start.first, goal.first);
-    // if (path.empty()) {
-    //     std::cout << "No path found" << std::endl;
-    // } else {
-    //     parser.write_path_to_py(map, graph, path, path_filename);
-    // }
     parser.clean_map_data(map);
 }

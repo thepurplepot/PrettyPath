@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import staticmaps
+import os
+import fnmatch
 
 class Node:
     def __init__(self, id, latitude, longitude, length=float('inf'), elevation=0):
@@ -9,7 +11,7 @@ class Node:
         self.length = length
         self.elevation = elevation
 
-def get_path(filename='data/path.csv'):
+def get_path(filename):
     path = []
     with open(filename, 'r') as file:
         next(file)  # Skip the first line
@@ -48,26 +50,38 @@ def calculate_ascent_descent(path):
     flat_length /= 1000
     return total_ascent, ascent_length, total_descent, descent_length, flat_length
 
-path = get_path()
-total_ascent, ascent_length, total_descent, descent_length, flat_length = calculate_ascent_descent(path)
-print(f"Total ascent: {total_ascent:.2f} m in {ascent_length:.2f} km")
-print(f"Total descent: {total_descent:.2f} m in {descent_length:.2f} km")
-print(f"Flat: {flat_length:.2f} km")
+def extract_tarn_names(filename):
+    tarns = filename[len("path_"):-len(".csv")]
+    start_tarn, end_tarn = tarns.split("_to_")
+    start_tarn = start_tarn.replace("_", " ")
+    end_tarn = end_tarn.replace("_", " ")
+    return start_tarn, end_tarn
 
-longitudes = [node.longitude for node in path]
-latitudes = [node.latitude for node in path]
+def plot_paths(directory='data/path'):
+    visited_tarns = {}
+    context = staticmaps.Context()
+    context.set_tile_provider(staticmaps.tile_provider_OSM)
+    for filename in os.listdir(directory):
+        if not fnmatch.fnmatch(filename, 'path_*.csv'):
+            continue
+        start_tarn, end_tarn = extract_tarn_names(filename)
+        path = get_path(os.path.join(directory, filename))
+        total_ascent, ascent_length, total_descent, descent_length, flat_length = calculate_ascent_descent(path)
+        print("Path from", start_tarn, "to", end_tarn)
+        print(f"Total ascent: {total_ascent:.2f} m in {ascent_length:.2f} km")
+        print(f"Total descent: {total_descent:.2f} m in {descent_length:.2f} km")
+        print(f"Flat: {flat_length:.2f} km")
+        line = [staticmaps.create_latlng(node.latitude, node.longitude) for node in path]
+        context.add_object(staticmaps.Line(line, width=1))
+        if start_tarn not in visited_tarns:
+            visited_tarns[start_tarn] = staticmaps.create_latlng(path[0].latitude, path[0].longitude)
+        if end_tarn not in visited_tarns:
+            visited_tarns[end_tarn] = staticmaps.create_latlng(path[-1].latitude, path[-1].longitude)
+    for tarn, latlng in visited_tarns.items():
+        context.add_object(staticmaps.Marker(latlng, color=staticmaps.GREEN, size=12))
+    return context
 
-start = staticmaps.create_latlng(latitudes[0], longitudes[0])
-end = staticmaps.create_latlng(latitudes[-1], longitudes[-1])
-
-context = staticmaps.Context()
-context.set_tile_provider(staticmaps.tile_provider_OSM)
-# Add start and end markers
-context.add_object(staticmaps.Marker(start, color=staticmaps.GREEN, size=12))
-context.add_object(staticmaps.Marker(end, color=staticmaps.RED, size=12))
-# Add path line
-line = [staticmaps.create_latlng(node.latitude, node.longitude) for node in path]
-context.add_object(staticmaps.Line(line, width=1))
+context = plot_paths()
 
 # # render non-anti-aliased png
 # image = context.render_pillow(800, 500)

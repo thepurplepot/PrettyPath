@@ -1,4 +1,5 @@
 #include "parser.hh"
+#include <filesystem>
 
 
 // Allocate memory for static variables
@@ -247,18 +248,21 @@ void Parser::write_path_to_py(const MapData& map_data, const Graph& graph, const
     std::cout << "Total length: " << total_length/1000.f << " km" << std::endl;
 }
 
-void Parser::write_tarn_paths(const MapData& map_data, const Graph& graph, const std::pair<std::vector<std::pair<const TarnData, size_t>>, std::vector<const Node*>>& tarns_path, const std::string& file_prefix) {
+void Parser::write_tarn_paths(const MapData& map_data, const Graph& graph, const std::pair<std::vector<std::pair<const TarnData, size_t>>, std::vector<const Node*>>& tarns_path, const std::string& file_dir) {
     auto tarns = tarns_path.first;
     auto path = tarns_path.second;
     size_t path_start = 0;
     size_t edges_written = 0;
+    for (const auto & entry : std::filesystem::directory_iterator(file_dir)) {
+        std::filesystem::remove(entry);
+    }
     for(size_t i = 0; i < tarns.size() - 1; i++) {
         auto path_length = tarns[i].second;
         edges_written += path_length;
         auto start_tarn = tarns[i].first;
         auto end_tarn = tarns[(i+1)%tarns.size()].first;
         std::cout << "Writing path from " << start_tarn.name << " to " << end_tarn.name << " with " << path_length << " nodes" << std::endl;
-        std::string filename = file_prefix + "_" + start_tarn.name_without_spaces() + "_" + end_tarn.name_without_spaces() + ".csv";
+        std::string filename = file_dir + "path_" + start_tarn.name_without_spaces() + "_to_" + end_tarn.name_without_spaces() + ".csv";
         std::vector<const Node*> sub_path(path.begin() + path_start, path.begin() + path_start + path_length);
         path_start = path_length;
         write_path_to_py(map_data, graph, sub_path, filename);

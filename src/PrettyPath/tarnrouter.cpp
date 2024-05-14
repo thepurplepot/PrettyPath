@@ -4,12 +4,21 @@
 #include <iomanip>
 
 namespace TarnRouter {
-std::vector<const TarnData> filter_tarns(const std::vector<const TarnData>& tarns, const double min_elevation, const long min_area) {
+std::vector<const TarnData> filter_tarns(const std::vector<const TarnData>& tarns, const double min_elevation, const double max_elevation, const long min_area, const double min_latitude, const double max_latitude, const double min_longitude, const double max_longitude) {
     std::vector<const TarnData> filtered_tarns;
 
     std::copy_if(tarns.begin(), tarns.end(), std::back_inserter(filtered_tarns),
-                 [min_elevation, min_area](const TarnData& tarn) { 
-                        return tarn.elevation >= min_elevation && tarn.area >= min_area;
+                 [min_elevation, max_elevation, min_area, min_latitude, max_latitude, min_longitude, max_longitude](const TarnData& tarn) {
+                        if (tarn.latitude < min_latitude || tarn.latitude > max_latitude || tarn.longitude < min_longitude || tarn.longitude > max_longitude) {
+                            return false;
+                        }
+                        if (tarn.elevation < min_elevation || tarn.elevation > max_elevation) {
+                            return false;
+                        }
+                        if (tarn.area < min_area) {
+                            return false;
+                        }
+                        return true;
                  });
 
     return filtered_tarns;
@@ -116,7 +125,10 @@ std::pair<std::vector<std::pair<const TarnData, size_t>>, std::vector<const Node
     auto paths_table = find_distances_between_tarns(graph, tarns);
     std::vector<double> dist = paths_table.first;
     std::cout << "Tarn distance table: " << std::endl;
-    std::vector<std::string> names = {"Lambfoot Dub","Beckhead Tarn","Foxes Tarn","Hard Tarn"};
+    std::vector<std::string> names;
+    for (const auto& tarn : tarns) {
+        names.push_back(tarn.name);
+    }
     print_table(dist, names);
     std::unordered_map<int, std::vector<const Node*>> paths = paths_table.second;
 
