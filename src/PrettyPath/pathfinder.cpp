@@ -1,6 +1,3 @@
-#include <queue>
-#include <unordered_set>
-#include <stack>
 #include "pathfinder.hh"
 
 namespace Pathfinder {
@@ -89,48 +86,64 @@ void init(const Graph& graph, const Node* start, const Node* goal, std::unordere
 }
 
 bool is_connected(const Graph& graph, const Node* start, const Node* goal) {
-    // DFS
-    std::unordered_set<const Node*> visited;
-    std::stack<const Node*> stack;
-    stack.push(start);
-    while (!stack.empty()) {
-        const Node* node = stack.top();
-        stack.pop();
-        if (node == goal) {
+    // Bidirectional DFS
+    std::unordered_set<const Node*> visited_from_start;
+    std::unordered_set<const Node*> visited_from_goal;
+    std::stack<const Node*> stack_from_start;
+    std::stack<const Node*> stack_from_goal;
+    stack_from_start.push(start);
+    stack_from_goal.push(goal);
+    while (!stack_from_start.empty() && !stack_from_goal.empty()) {
+        if (visit_next_node(graph, stack_from_start, visited_from_start, visited_from_goal)) {
             return true;
         }
-        if (!visited.count(node)) {
-            visited.insert(node);
-            for (const auto neighbour : graph.get_neighbours(node)) {
-                auto neighbour_node = neighbour.first;
-                stack.push(neighbour_node);
-            }
+        if (visit_next_node(graph, stack_from_goal, visited_from_goal, visited_from_start)) {
+            return true;
         }
     }
     return false;
 }
 
-void find_connected_start_and_goal(const Graph& graph, const Node*& start, const Node*& goal) {
+bool visit_next_node(const Graph& graph, std::stack<const Node*>& stack, std::unordered_set<const Node*>& visited_from_this_side, std::unordered_set<const Node*>& visited_from_other_side) {
+    const Node* node = stack.top();
+    stack.pop();
+    if (visited_from_other_side.count(node)) {
+        return true;
+    }
+    if (!visited_from_this_side.count(node)) {
+        visited_from_this_side.insert(node);
+        for (const auto neighbour : graph.get_neighbours(node)) {
+            auto neighbour_node = neighbour.first;
+            stack.push(neighbour_node);
+        }
+    }
+    return false;
+}
+
+bool find_connected_start_and_goal(const Graph& graph, const Node*& start, const Node*& goal) {
     size_t attempts = 0;
-    const double variation = 50;
+    double variation = 50;
     const Node* new_start = nullptr;
     std::vector<const Node*> attempted_goals = {goal};
     double goal_error = 0;
 
-    while(new_start == nullptr && attempts < 10) {
+    while(new_start == nullptr && attempts < 15) {
+        if (attempts % 5 == 0 && attempts != 0) {
+            variation *= 2;
+        }
         auto start_node = find_nearby_connected_node(start, goal, variation, graph);
         new_start = start_node.second;
         if(new_start != nullptr) {
             start = new_start;
             const double error = start_node.first + goal_error;
             std::cout << "Total distance error: " << error << " after " << attempts << " attempts" << std::endl;
-            return;
+            return true;
         }
         auto goal_node = find_nearby_node(attempted_goals, variation, graph);
         goal = goal_node.second;
         if(goal == nullptr) {
             std::cerr << "Error: No nearby goal node found!" << std::endl;
-            return;
+            return false;
         }
         goal_error = goal_node.first;
         attempted_goals.push_back(goal);
@@ -138,8 +151,9 @@ void find_connected_start_and_goal(const Graph& graph, const Node*& start, const
     }
     
     std::cerr << "Error: No connection between start and goal found!" << std::endl;
+    return false;
 }
-
+ 
 std::vector<const Node*> a_star(const Graph& graph, const Node* start, const Node* goal) {
     auto start_time = std::chrono::high_resolution_clock::now();
     const Node* current_goal = goal;
@@ -147,7 +161,10 @@ std::vector<const Node*> a_star(const Graph& graph, const Node* start, const Nod
 
     if(!is_connected(graph, start, goal)) {
         std::cout << "Start and goal are not connected" << std::endl;
-        find_connected_start_and_goal(graph, current_start, current_goal);
+        if(!find_connected_start_and_goal(graph, current_start, current_goal)) {
+            std::cout << "No connected start and goal found" << std::endl;
+            return {};
+        }
     }
     // Priority queue of nodes to visit, sorted by the lowest f_score
     open_set_t open_set;

@@ -33,12 +33,12 @@ std::pair<double, std::vector<const Node*>> find_path_between_tarns(const Graph&
 }
 
 
-double tsp(const int mask, const int pos, const int n, const std::vector<double>& dist, std::vector<double>& dp) {
+double tsp(const int mask, const int pos, const int n, const std::vector<double>& dist, std::map<int,double>& dp) {
     if (mask == (1 << n) - 1) {
         return dist[pos*n]; // All tarns visited
     }
-    if (dp[mask*n + pos] != -1) {
-        return dp[mask*n + pos]; // Already visited
+    if (dp.find(mask*n + pos) != dp.end()) {
+        return dp.at(mask*n + pos); // Already visited
     }
     double ans = std::numeric_limits<double>::max();
     for (int i = 0; i < n; i++) {
@@ -50,7 +50,7 @@ double tsp(const int mask, const int pos, const int n, const std::vector<double>
 }
 
 std::pair<std::vector<double>, std::unordered_map<int, std::vector<const Node*>>> find_distances_between_tarns(const Graph& graph, const std::vector<const TarnData>& tarns) {
-    const int n = tarns.size();
+    const size_t n = tarns.size();
     std::vector<double> dist;
     dist.assign(n*n, 0);
     std::unordered_map<int, std::vector<const Node*>> paths;
@@ -91,7 +91,7 @@ void print_table(const std::vector<double>& table, const std::vector<std::string
     }
 }
 
-std::pair<std::vector<std::pair<const TarnData, size_t>>, std::vector<const Node*>> reconstruct_path(const std::vector<const TarnData>& tarns, std::unordered_map<int, std::vector<const Node*>>& paths, int n, const std::vector<double>& dp) {
+std::pair<std::vector<std::pair<const TarnData, size_t>>, std::vector<const Node*>> reconstruct_path(const std::vector<const TarnData>& tarns, std::unordered_map<int, std::vector<const Node*>>& paths, int n, const std::map<int,double>& dp) {
     std::vector<std::pair<const TarnData, size_t>> path;
     std::vector<const Node*> path_nodes;
     int mask = 1;
@@ -100,7 +100,7 @@ std::pair<std::vector<std::pair<const TarnData, size_t>>, std::vector<const Node
         int next_pos = -1;
         for (int j = 0; j < n; j++) {
             if ((mask & (1 << j)) == 0) {
-                if (next_pos == -1 || dp[(mask | (1 << j))*n + j] < dp[(mask | (1 << next_pos))*n + next_pos]) {
+                if (next_pos == -1 || dp.at((mask | (1 << j))*n + j) < dp.at((mask | (1 << next_pos))*n + next_pos)) {
                     next_pos = j;
                 }
             }
@@ -121,7 +121,7 @@ std::pair<std::vector<std::pair<const TarnData, size_t>>, std::vector<const Node
 }
 
 std::pair<std::vector<std::pair<const TarnData, size_t>>, std::vector<const Node*>> find_shortest_path_between_tarns(const Graph& graph, const std::vector<const TarnData>& tarns) {
-    int n = tarns.size();
+    const size_t n = tarns.size();
     auto paths_table = find_distances_between_tarns(graph, tarns);
     std::vector<double> dist = paths_table.first;
     std::cout << "Tarn distance table: " << std::endl;
@@ -132,8 +132,7 @@ std::pair<std::vector<std::pair<const TarnData, size_t>>, std::vector<const Node
     print_table(dist, names);
     std::unordered_map<int, std::vector<const Node*>> paths = paths_table.second;
 
-    std::vector<double> dp;
-    dp.assign(1 << (n + 1), -1);
+    std::map<int, double> dp;
 
     tsp(1, 0, n, dist, dp);
 

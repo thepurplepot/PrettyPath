@@ -7,12 +7,13 @@
 
 #define MAX_SLOPE 3.f
 
+// Avoid roads, steep inclines and difficult paths
 #define COST(length, slope, cars, difficulty) (LENGTH_WEIGHT * length + ELEVATION_WEIGHT * (slope + MAX_SLOPE) + CARS_WEIGHT * (cars + 1) + DIFFICULTY_WEIGHT * (difficulty + 1))
 
 
-#define MINIMUM_TARN_ELEVATION 600
+#define MINIMUM_TARN_ELEVATION 500
 #define MAXIMUM_TARN_ELEVATION 800
-#define MINIMUM_TARN_AREA 300
+#define MINIMUM_TARN_AREA 500
 #define MINIMUM_LATITUDE 54.2
 #define MAXIMUM_LATITUDE 54.7
 #define MINIMUM_LONGITUDE -3.5
