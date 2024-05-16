@@ -139,8 +139,8 @@ MapData Parser::read_map_data(Graph& graph) {
     return map_data;
 }
 
-std::vector<const TarnData> Parser::read_tarn_data(const std::string& filename) {
-    std::vector<const TarnData> tarn_data;
+std::vector<TarnData> Parser::read_tarn_data(const std::string& filename) {
+    std::vector<TarnData> tarn_data;
 
     std::ifstream tarns_file(filename);
     if (!tarns_file.is_open()) {
@@ -199,14 +199,23 @@ void Parser::write_path_to_py(const MapData& map_data, const Graph& graph, const
     for (int i = 1; i < path.size(); i++) {
         const Node* node = path[i - 1];
         const Node* next_node = path[i];
+        bool found_edge = false;
         if(node == nullptr) {
             std::cerr << "Error: Node is null" << std::endl; 
+            continue;
+        }
+        if (next_node == nullptr) {
+            std::cerr << "Error: Next node is null" << std::endl;
+            continue;
+        }
+        if(node == next_node) {
             continue;
         }
 
         // Find the edge between node and next_node
         for (const auto& edge_pair : graph.get_neighbours(node)) {
             if (edge_pair.first == next_node) {
+                found_edge = true;
                 Edge edge = edge_pair.second;
                 // if (edge.get_difficulty() != 0) { //DEBUG
                 //     std::cerr << "Warning: Difficulty is not 0 for " << edge.get_osm_id() << std::endl;
@@ -242,6 +251,9 @@ void Parser::write_path_to_py(const MapData& map_data, const Graph& graph, const
                 break;
             }
         }
+        if (!found_edge) {
+            std::cerr << "Error: Edge not found between " << node->get_id() << " and " << next_node->get_id() << std::endl;
+        }
     }
     file.close();
     std::cout << "Wrote " << node_counter << " nodes to " << filename << std::endl;
@@ -256,18 +268,30 @@ void Parser::write_tarn_paths(const MapData& map_data, const Graph& graph, const
     for (const auto & entry : std::filesystem::directory_iterator(file_dir)) {
         std::filesystem::remove(entry);
     }
+    // std::cout << "Full Path" << std::endl;
+    // size_t index = 0;
+    // int tarn_index = 0;
+    // for(size_t i = 0; i < path.size(); i++) {
+    //     const Node* node = path[i];
+    //     const auto tarn = tarns[tarn_index];
+    //     if(index == tarn.second - 1) {
+    //         std::cout << "Tarn : " << tarns[++tarn_index].first.name << std::endl;
+    //         index = 0;
+    //     }
+    //     std::cout << "Path node: " << node->get_id() << std::endl;
+    //     index ++;
+    // }
     for(size_t i = 0; i < tarns.size() - 1; i++) {
         auto path_length = tarns[i].second;
         edges_written += path_length;
         auto start_tarn = tarns[i].first;
         auto end_tarn = tarns[(i+1)%tarns.size()].first;
-        std::cout << "Writing path from " << start_tarn.name << " to " << end_tarn.name << " with " << path_length << " nodes" << std::endl;
+        std::cout << "Writing path from " << start_tarn.name << " to " << end_tarn.name << " with " << path_length << " edges" << std::endl;
         std::string filename = file_dir + "path_" + start_tarn.name_without_spaces() + "_to_" + end_tarn.name_without_spaces() + ".csv";
-        std::vector<const Node*> sub_path(path.begin() + path_start, path.begin() + path_start + path_length);
-        path_start = path_length;
+        std::vector<const Node*> sub_path(path.begin() + path_start, path.begin() + path_start + path_length-1);
+        path_start += path_length - 1;
         write_path_to_py(map_data, graph, sub_path, filename);
     }
-    std::cout << "Wrote " << edges_written << " edges to files, total in path is: " << path.size() << std::endl;
 }
 
 

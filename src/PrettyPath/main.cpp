@@ -37,6 +37,8 @@ int main(int argc, char** argv) {
     MapData map = parser.read_map_data(graph);
     auto tarns = parser.read_tarn_data(tarns_filename);
     auto filtered_tarns = TarnRouter::filter_tarns(tarns, MINIMUM_TARN_ELEVATION, MAXIMUM_TARN_ELEVATION, MINIMUM_TARN_AREA, MINIMUM_LATITUDE, MAXIMUM_LATITUDE, MINIMUM_LONGITUDE, MAXIMUM_LONGITUDE);
+    std::cout << "Tarns must have an elevation between " << MINIMUM_TARN_ELEVATION << " and " << MAXIMUM_TARN_ELEVATION << " m" << std::endl;
+    std::cout << "Tarns must have an area of at least " << MINIMUM_TARN_AREA << " m^2" << std::endl;
     std::cout << "Filtered tarns:" << std::endl;
     for (auto tarn : filtered_tarns) {
         std::cout << "\"" << tarn.name << "\"" << " Elevation: " << tarn.elevation << " m Area: " << tarn.area << " m^2" << std::endl;

@@ -136,7 +136,7 @@ bool find_connected_start_and_goal(const Graph& graph, const Node*& start, const
         if(new_start != nullptr) {
             start = new_start;
             const double error = start_node.first + goal_error;
-            std::cout << "Total distance error: " << error << " after " << attempts << " attempts" << std::endl;
+            // std::cout << "Total distance error: " << error << " after " << attempts << " attempts" << std::endl;
             return true;
         }
         auto goal_node = find_nearby_node(attempted_goals, variation, graph);
@@ -154,14 +154,10 @@ bool find_connected_start_and_goal(const Graph& graph, const Node*& start, const
     return false;
 }
  
-std::vector<const Node*> a_star(const Graph& graph, const Node* start, const Node* goal) {
-    auto start_time = std::chrono::high_resolution_clock::now();
-    const Node* current_goal = goal;
-    const Node* current_start = start;
-
+std::vector<const Node*> a_star(const Graph& graph, const Node*& start, const Node*& goal) {
     if(!is_connected(graph, start, goal)) {
-        std::cout << "Start and goal are not connected" << std::endl;
-        if(!find_connected_start_and_goal(graph, current_start, current_goal)) {
+        // std::cout << "Start and goal are not connected" << std::endl;
+        if(!find_connected_start_and_goal(graph, start, goal)) {
             std::cout << "No connected start and goal found" << std::endl;
             return {};
         }
@@ -173,7 +169,7 @@ std::vector<const Node*> a_star(const Graph& graph, const Node* start, const Nod
     std::unordered_map<const Node*, double> g_score; // Cost from start to node
     std::unordered_map<const Node*, double> f_score; // Cost from start to goal through node
     long searched_nodes;
-    init(graph, current_start, current_goal, came_from, g_score, f_score, open_set, searched_nodes);
+    init(graph, start, goal, came_from, g_score, f_score, open_set, searched_nodes);
 
     while(true) {
         if(open_set.empty()) {
@@ -185,10 +181,7 @@ std::vector<const Node*> a_star(const Graph& graph, const Node* start, const Nod
         open_set.pop(); // Remove the node from open_set
         searched_nodes++;
 
-        if (current == current_goal) {
-            auto end_time = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
-            std::cout << "Duration: " << duration/1000.f << " ms" << std::endl;
+        if (current == goal) {
             return reconstruct_path(came_from, current);
         }
 
@@ -202,7 +195,7 @@ std::vector<const Node*> a_star(const Graph& graph, const Node* start, const Nod
             if (tentative_g_score < g_score[neighbour]) {
                 came_from[neighbour] = current;
                 g_score[neighbour] = tentative_g_score;
-                f_score[neighbour] = g_score[neighbour] + neighbour->distance_to(current_goal->get_location().first, current_goal->get_location().second);
+                f_score[neighbour] = g_score[neighbour] + neighbour->distance_to(goal->get_location().first, goal->get_location().second);
                 open_set.push(std::make_pair(f_score[neighbour], neighbour));
             }
         }

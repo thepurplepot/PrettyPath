@@ -119,4 +119,5 @@ struct TarnData {
     long osm_id;
     float elevation;
     unsigned long area;
+    const Node* best_node = nullptr;
 };

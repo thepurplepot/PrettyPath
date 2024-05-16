@@ -15,5 +15,6 @@ data/nodes.csv
 data/path.csv
 data/tarns.csv
 data/path/*
+data/markers/*
 path.svg
 log.txt
