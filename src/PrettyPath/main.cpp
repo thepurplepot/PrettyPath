@@ -24,6 +24,18 @@ void handle_option(int argc, char** argv, std::string& nodes_filename, std::stri
     }
 }
 
+//TODO add config file support
+// #include <fstream>
+// #include <nlohmann/json.hpp>
+
+// using json = nlohmann::json;
+
+// std::ifstream config_file("config.json");
+// json config;
+// config_file >> config;
+
+// float LENGTH_WEIGHT = config["LENGTH_WEIGHT"];
+// float ELEVATION_WEIGHT = config["ELEVATION_WEIGHT"];
 int main(int argc, char** argv) {
     std::string nodes_filename = "data/nodes.csv";
     std::string edges_filename = "data/edges.csv";
@@ -44,7 +56,7 @@ int main(int argc, char** argv) {
         std::cout << "\"" << tarn.name << "\"" << " Elevation: " << tarn.elevation << " m Area: " << tarn.area << " m^2" << std::endl;
     }
     std::cout << std::endl;
-    auto path = TarnRouter::find_shortest_path_between_tarns(graph, filtered_tarns);
+    auto path = TarnRouter::find_shortest_path_between_tarns(graph, filtered_tarns, MIN_DIST_PER_DAY);
     auto tarn_path = path.first;
     if (path.first.empty()) {
         std::cout << "No path found" << std::endl;

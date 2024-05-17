@@ -42,19 +42,26 @@ std::pair<double, std::vector<const Node*>> find_path_between_tarns(const Graph&
     return std::make_pair(length, path);
 }
 
-// TODO do something different to tsp so there can be a minimum distance to walk each day 
-double tsp(const int mask, const int pos, const int n, const std::vector<double>& dist, std::map<int,double>& dp) {
+double tsp(const int mask, const int pos, const int n, const double min_dist_per_day, const std::vector<double>& dist, std::unordered_map<int,double>& dp) {
     if (mask == (1 << n) - 1) {
         return dist[pos*n]; // All tarns visited
     }
     if (dp.find(mask*n + pos) != dp.end()) {
         return dp.at(mask*n + pos); // Already visited
     }
+    bool valid_node_exists = false;
     double ans = std::numeric_limits<double>::max();
     for (int i = 0; i < n; i++) {
         if ((mask & (1 << i)) == 0) {
-            ans = std::min(ans, dist[pos*n + i] + tsp(mask | (1 << i), i, n, dist, dp));
+            if(dist[pos*n + i] < min_dist_per_day) {
+                continue;
+            }
+            valid_node_exists = true;
+            ans = std::min(ans, dist[pos*n + i] + tsp(mask | (1 << i), i, n, min_dist_per_day, dist, dp));
         }
+    }
+    if (!valid_node_exists) {
+        return ans; // Dont visit any more tarns
     }
     return dp[mask*n + pos] = ans;
 }
@@ -120,7 +127,7 @@ void print_table(const std::vector<double>& table, const std::vector<std::string
     }
 }
 
-std::pair<std::vector<std::pair<const TarnData, size_t>>, std::vector<const Node*>> reconstruct_path(const std::vector<TarnData>& tarns, std::unordered_map<int, std::vector<const Node*>>& paths, int n, const std::map<int,double>& dp) {
+std::pair<std::vector<std::pair<const TarnData, size_t>>, std::vector<const Node*>> reconstruct_path(const std::vector<TarnData>& tarns, std::unordered_map<int, std::vector<const Node*>>& paths, int n, const std::unordered_map<int,double>& dp) {
     std::vector<std::pair<const TarnData, size_t>> path;
     std::vector<const Node*> path_nodes;
     int mask = 1;
@@ -129,7 +136,21 @@ std::pair<std::vector<std::pair<const TarnData, size_t>>, std::vector<const Node
         int next_pos = -1;
         for (int j = 0; j < n; j++) {
             if ((mask & (1 << j)) == 0) {
-                if (next_pos == -1 || dp.at((mask | (1 << j))*n + j) < dp.at((mask | (1 << next_pos))*n + next_pos)) {
+                if (next_pos == -1) {
+                    next_pos = j;
+                    continue;
+                }
+                int candidate_index = (mask | (1 << j))*n + j;
+                int next_pos_index = (mask | (1 << next_pos))*n + next_pos;
+                if (dp.find(candidate_index) == dp.end()) {
+                    continue;
+                }
+                if (dp.find(next_pos_index) == dp.end()) {
+                    std::cout << "Error: next_pos_index not found" << std::endl;
+                    next_pos = j;
+                    continue;
+                }
+                if (dp.at(candidate_index) < dp.at(next_pos_index)) {
                     next_pos = j;
                 }
             }
@@ -149,7 +170,8 @@ std::pair<std::vector<std::pair<const TarnData, size_t>>, std::vector<const Node
     return std::make_pair(path, path_nodes);
 }
 
-std::pair<std::vector<std::pair<const TarnData, size_t>>, std::vector<const Node*>> find_shortest_path_between_tarns(const Graph& graph, std::vector<TarnData>& tarns) {
+//TODO add a start index??
+std::pair<std::vector<std::pair<const TarnData, size_t>>, std::vector<const Node*>> find_shortest_path_between_tarns(const Graph& graph, std::vector<TarnData>& tarns, const double min_dist_per_day) {
     const size_t n = tarns.size();
     auto paths_table = find_distances_between_tarns(graph, tarns);
     std::vector<double> dist = paths_table.first;
@@ -160,9 +182,9 @@ std::pair<std::vector<std::pair<const TarnData, size_t>>, std::vector<const Node
     // print_table(dist, names);
     std::unordered_map<int, std::vector<const Node*>> paths = paths_table.second;
 
-    std::map<int, double> dp;
+    std::unordered_map<int, double> dp;
 
-    tsp(1, 0, n, dist, dp);
+    tsp(1, 0, n, min_dist_per_day, dist, dp);
 
     auto path = reconstruct_path(tarns, paths, n, dp);
 

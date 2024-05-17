@@ -72,6 +72,7 @@ private:
     std::unordered_map<osmium::object_id_type, NodeData> m_nodes;
     long m_node_counter = 0;
     std::unordered_map<osmium::object_id_type, TarnData> m_tarns;
+    std::unordered_map<std::string, std::vector<osmium::object_id_type>> m_tarn_names;
     std::unordered_map<osmium::object_id_type, WayData> m_ways;
     long m_edge_counter = 0;
     long m_tarn_counter = 0;

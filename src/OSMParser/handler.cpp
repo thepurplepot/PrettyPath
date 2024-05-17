@@ -54,6 +54,17 @@ void osmparser::Handler::way(const osmium::Way& way) {
     }
 
     if(!tarn_name.empty()) {
+        // Avoid duplicate tarn names
+        if(m_tarn_names.find(tarn_name) == m_tarn_names.end()){
+            m_tarn_names[tarn_name] = std::vector<osmium::object_id_type>();
+        }
+        m_tarn_names[tarn_name].push_back(way.id());
+        const size_t tarn_name_size = m_tarn_names[tarn_name].size();
+        if(tarn_name_size > 1) {
+            // tarn_name += " " + std::to_string(tarn_name_size);
+            std::cout << "Skipping duplicate tarn: " << tarn_name << "\n";
+            return;
+        }
         m_tarns[way.id()] = TarnData(tarn_name, node_ids);
         return;
     }

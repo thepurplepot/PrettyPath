@@ -4,7 +4,7 @@ import os
 import fnmatch
 
 font_path = "/System/Library/Fonts/Helvetica.ttc"
-regen_markers = False
+regen_markers = True
 
 class Node:
     def __init__(self, id, latitude, longitude, length=float('inf'), elevation=0):
@@ -60,7 +60,7 @@ def extract_tarn_names(filename):
     end_tarn = end_tarn.replace("_", " ")
     return start_tarn, end_tarn
 
-def generate_tarn_marker(text, filename):
+def generate_tarn_marker(text, index, filename):
     side_pading = 10
     bottom_padding = 40
     arrow_height = 25
@@ -75,15 +75,17 @@ def generate_tarn_marker(text, filename):
     draw = ImageDraw.Draw(marker)
     draw.ellipse((marker_width/2-arrow_width/2, marker_height-arrow_height-arrow_width/2, marker_width/2+arrow_width/2, marker_height-arrow_height+arrow_width/2), fill=arrow_color)
     draw.polygon([(marker_width/2, marker_height), (marker_width/2-arrow_width/2, marker_height-arrow_height), (marker_width/2+arrow_width/2, marker_height-arrow_height)], fill=arrow_color)
-    draw.text((side_pading, 5), text, font=font, fill=(0, 0, 0, 255))  # Adjust text position
+    draw.text((side_pading, 5), text, font=font, fill=(0, 0, 0, 255))
+    draw.text((marker_width/2-5, bottom_padding-arrow_height+5), str(index), font=font, fill=(0, 0, 0, 255))
     marker.save(filename, "PNG")
 
 def plot_paths(directory='data/path'):
+    colours = [staticmaps.RED, staticmaps.GREEN, staticmaps.BLUE, staticmaps.PURPLE, staticmaps.YELLOW]
     visited_tarns = {}
-    index = 0
+    tarn_order = {}
     context = staticmaps.Context()
     context.set_tile_provider(staticmaps.tile_provider_OSM)
-    for filename in os.listdir(directory):
+    for i, filename in enumerate(os.listdir(directory)):
         if not fnmatch.fnmatch(filename, 'path_*.csv'):
             continue
 
@@ -98,21 +100,33 @@ def plot_paths(directory='data/path'):
         print(f"Total descent: {total_descent:.2f} m in {descent_length:.2f} km")
         print(f"Flat: {flat_length:.2f} km")
 
+        colour = colours[i % len(colours)]
         line = [staticmaps.create_latlng(node.latitude, node.longitude) for node in path]
-        context.add_object(staticmaps.Line(line, width=1))
+        context.add_object(staticmaps.Line(line, width=1, color=colour))
 
         if start_tarn not in visited_tarns:
             visited_tarns[start_tarn] = staticmaps.create_latlng(path[0].latitude, path[0].longitude)
         if end_tarn not in visited_tarns:
             visited_tarns[end_tarn] = staticmaps.create_latlng(path[-1].latitude, path[-1].longitude)
-
-        index += 1
+        
+        tarn_order[start_tarn] = end_tarn
+    
+    # Find tarn order
+    first_tarn = None
+    for tarn in visited_tarns.keys():
+        if tarn not in tarn_order.values():
+            first_tarn = tarn
+            break
+    tarns = [first_tarn]
+    for _ in range(len(tarn_order)):
+        tarns.append(tarn_order[tarns[-1]])
 
     for tarn, latlng in visited_tarns.items():
         image_filename = f"data/markers/{tarn}.png"
         if(f"{tarn}.png" not in os.listdir("data/markers") or regen_markers):
             print(f"Generating marker for {tarn}")
-            generate_tarn_marker(tarn, image_filename)
+            tarn_index = tarns.index(tarn)
+            generate_tarn_marker(tarn, tarn_index, image_filename)
         width, height = Image.open(image_filename).size
         context.add_object(staticmaps.ImageMarker(latlng, image_filename, width/2, height))
     return context
