@@ -4,6 +4,7 @@ import os
 import fnmatch
 
 font_path = "/System/Library/Fonts/Helvetica.ttc"
+regen_markers = False
 
 class Node:
     def __init__(self, id, latitude, longitude, length=float('inf'), elevation=0):
@@ -60,13 +61,22 @@ def extract_tarn_names(filename):
     return start_tarn, end_tarn
 
 def generate_tarn_marker(text, filename):
-    image = Image.new("RGBA", (100, 30), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(image)
+    side_pading = 10
+    bottom_padding = 40
+    arrow_height = 25
+    arrow_width = 10
+    arrow_color = (0, 255, 0, 255)
     font = ImageFont.truetype(font_path, 15)
-    draw.ellipse((0, 10, 100, 30), fill=(100, 255, 100, 255))
-    draw.polygon([(50, 0), (40, 20), (60, 20)], fill=(100, 255, 100, 255))  # Draw a triangle
-    draw.text((10, 10), text, font=font, fill=(0, 0, 0, 255))
-    image.save(filename, "PNG")
+
+    text_width, text_height = font.getbbox(text)[2:4]
+    marker_width = text_width + side_pading*2
+    marker_height = text_height + bottom_padding
+    marker = Image.new("RGBA", (marker_width, marker_height), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(marker)
+    draw.ellipse((marker_width/2-arrow_width/2, marker_height-arrow_height-arrow_width/2, marker_width/2+arrow_width/2, marker_height-arrow_height+arrow_width/2), fill=arrow_color)
+    draw.polygon([(marker_width/2, marker_height), (marker_width/2-arrow_width/2, marker_height-arrow_height), (marker_width/2+arrow_width/2, marker_height-arrow_height)], fill=arrow_color)
+    draw.text((side_pading, 5), text, font=font, fill=(0, 0, 0, 255))  # Adjust text position
+    marker.save(filename, "PNG")
 
 def plot_paths(directory='data/path'):
     visited_tarns = {}
@@ -99,12 +109,12 @@ def plot_paths(directory='data/path'):
         index += 1
 
     for tarn, latlng in visited_tarns.items():
-        context.add_object(staticmaps.Marker(latlng, color=staticmaps.GREEN, size=12))
         image_filename = f"data/markers/{tarn}.png"
-        if(f"{tarn}.png" not in os.listdir("data/markers")):
+        if(f"{tarn}.png" not in os.listdir("data/markers") or regen_markers):
             print(f"Generating marker for {tarn}")
             generate_tarn_marker(tarn, image_filename)
-        context.add_object(staticmaps.ImageMarker(latlng, image_filename, 12, 12))
+        width, height = Image.open(image_filename).size
+        context.add_object(staticmaps.ImageMarker(latlng, image_filename, width/2, height))
     return context
 
 

@@ -274,7 +274,7 @@ void Parser::write_tarn_paths(const MapData& map_data, const Graph& graph, const
     // for(size_t i = 0; i < path.size(); i++) {
     //     const Node* node = path[i];
     //     const auto tarn = tarns[tarn_index];
-    //     if(index == tarn.second - 1) {
+    //     if(index == tarn.second) {
     //         std::cout << "Tarn : " << tarns[++tarn_index].first.name << std::endl;
     //         index = 0;
     //     }
@@ -288,8 +288,8 @@ void Parser::write_tarn_paths(const MapData& map_data, const Graph& graph, const
         auto end_tarn = tarns[(i+1)%tarns.size()].first;
         std::cout << "Writing path from " << start_tarn.name << " to " << end_tarn.name << " with " << path_length << " edges" << std::endl;
         std::string filename = file_dir + "path_" + start_tarn.name_without_spaces() + "_to_" + end_tarn.name_without_spaces() + ".csv";
-        std::vector<const Node*> sub_path(path.begin() + path_start, path.begin() + path_start + path_length-1);
-        path_start += path_length - 1;
+        std::vector<const Node*> sub_path(path.begin() + path_start, path.begin() + path_start + path_length);
+        path_start += path_length;
         write_path_to_py(map_data, graph, sub_path, filename);
     }
 }

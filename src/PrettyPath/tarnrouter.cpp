@@ -37,12 +37,12 @@ std::pair<double, std::vector<const Node*>> find_path_between_tarns(const Graph&
     auto path = Pathfinder::a_star(graph, start, goal);
     tarn1.best_node = start;
     tarn2.best_node = goal;
-    std::cout << tarn1.name << ": (" << start->get_location().first << "," << start->get_location().second << ") " << tarn2.name << ": (" << goal->get_location().first << "," << goal->get_location().second << ")" << std::endl;
+    // std::cout << tarn1.name << ": (" << start->get_location().first << "," << start->get_location().second << ") " << tarn2.name << ": (" << goal->get_location().first << "," << goal->get_location().second << ")" << std::endl;
     auto length = Pathfinder::get_path_length(path);
     return std::make_pair(length, path);
 }
 
-
+// TODO do something different to tsp so there can be a minimum distance to walk each day 
 double tsp(const int mask, const int pos, const int n, const std::vector<double>& dist, std::map<int,double>& dp) {
     if (mask == (1 << n) - 1) {
         return dist[pos*n]; // All tarns visited
@@ -140,11 +140,7 @@ std::pair<std::vector<std::pair<const TarnData, size_t>>, std::vector<const Node
             // std::cout << "Reversing path" << std::endl;
             std::reverse(paths[n*pos + next_pos].begin(), paths[n*pos + next_pos].end());
         }
-        auto end = paths.at(n*pos + next_pos).end();
-        if (i != n - 2) {
-            end--; // Aviod adding the last node twice
-        }
-        path_nodes.insert(path_nodes.end(), paths.at(n*pos + next_pos).begin(), end);
+        path_nodes.insert(path_nodes.end(), paths.at(n*pos + next_pos).begin(), paths.at(n*pos + next_pos).end());
 
         mask |= (1 << next_pos);
         pos = next_pos;
