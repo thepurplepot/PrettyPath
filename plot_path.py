@@ -1,7 +1,7 @@
 import staticmaps
 from PIL import Image, ImageDraw, ImageFont
 import os
-import fnmatch
+import sys
 
 font_path = "/System/Library/Fonts/Helvetica.ttc"
 regen_markers = True
@@ -54,7 +54,7 @@ def calculate_ascent_descent(path):
     return total_ascent, ascent_length, total_descent, descent_length, flat_length
 
 def extract_tarn_names(filename):
-    tarns = filename[len("path_"):-len(".csv")]
+    tarns = filename[:-len(".csv")]
     start_tarn, end_tarn = tarns.split("_to_")
     start_tarn = start_tarn.replace("_", " ")
     end_tarn = end_tarn.replace("_", " ")
@@ -86,8 +86,8 @@ def plot_paths(directory='data/path'):
     context = staticmaps.Context()
     context.set_tile_provider(staticmaps.tile_provider_OSM)
     for i, filename in enumerate(os.listdir(directory)):
-        if not fnmatch.fnmatch(filename, 'path_*.csv'):
-            continue
+        # if not fnmatch.fnmatch(filename, 'path_*.csv'):
+        #     continue
 
         start_tarn, end_tarn = extract_tarn_names(filename)
         path = get_path(os.path.join(directory, filename))
@@ -134,16 +134,26 @@ def plot_paths(directory='data/path'):
 
 
 
-if not os.path.exists("data/markers"):
-    os.makedirs("data/markers")
+def main (directory='data/path', output='path.svg'):
+    if not os.path.exists("data/markers"):
+        os.makedirs("data/markers")
 
-context = plot_paths()
+    context = plot_paths(directory)
 
-# # render non-anti-aliased png
-# image = context.render_pillow(800, 500)
-# image.save("path.png")
+    # # render non-anti-aliased png
+    # image = context.render_pillow(800, 500)
+    # image.save("path.png")
 
-# render svg
-svg_image = context.render_svg(800, 500)
-with open("path.svg", "w", encoding="utf-8") as f:
-    svg_image.write(f, pretty=True)
+    # render svg
+    svg_image = context.render_svg(800, 500)
+    with open(output, "w", encoding="utf-8") as f:
+        svg_image.write(f, pretty=True)
+
+if __name__ == "__main__":
+    directory = 'data/path'
+    output = 'path.svg'
+    if len(sys.argv) > 1:
+        directory = sys.argv[1]
+        if len(sys.argv) > 2:
+            output = sys.argv[2]
+    main(directory, output)
