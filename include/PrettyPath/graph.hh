@@ -5,7 +5,7 @@
 #include <iostream>
 #include <functional>
 #include "utils.hh"
-#include "settings.hh"
+#include "config.hh"
 #pragma once
 
 using node_id_t = long;
@@ -73,7 +73,8 @@ public:
     }
 
     double cost() const {
-        return COST(length, slope, cars, difficulty);
+        const double cost = (Config::c.length_weight * length + Config::c.elevation_weight * (slope + Config::c.max_slope) + Config::c.cars_weight * (cars + 1) + Config::c.difficulty_weight * (difficulty + 1));
+        return cost;
     }
 
     double elevation_change() const {

@@ -10,6 +10,7 @@
 - C++ 17 compatible compiler
 - libosmium 
 - protozero
+- nlohmann_json
 - ZLIB
 - GDAL
 - Python: staticmaps

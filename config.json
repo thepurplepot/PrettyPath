@@ -1,4 +1,8 @@
 {
+    "NODES_FILENAME": "data/nodes.csv",
+    "EDGES_FILENAME": "data/edges.csv",
+    "TARNS_FILENAME": "data/tarns.csv",
+    "PATH_DIR": "data/path/",
     "LENGTH_WEIGHT": 1.0,
     "ELEVATION_WEIGHT": 0.2,
     "DIFFICULTY_WEIGHT": 0.1,
