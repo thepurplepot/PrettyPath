@@ -3,6 +3,8 @@
 #include "tarnrouter.hh"
 #include "parser.hh"
 #include <iomanip>
+#include <future>
+#include <mutex>
 
 namespace TarnRouter {
 std::vector<TarnData> filter_tarns(const std::vector<TarnData>& tarns, const double min_elevation, const double max_elevation, const long min_area, const double min_latitude, const double max_latitude, const double min_longitude, const double max_longitude) {
@@ -73,17 +75,14 @@ std::pair<std::vector<double>, std::unordered_map<int, std::vector<const Node*>>
     std::unordered_map<int, std::vector<const Node*>> paths;
 
     const size_t total = n * (n-1) / 2;
+    std::mutex mux;
     size_t done = 0;
 
-    for (int i = 0; i < n; i++) {
-        for (int j = i + 1; j < n; j++) { // Only need to calculate distance between each pair once
-            auto path = find_path_between_tarns(graph, tarns[i], tarns[j]);
-            dist[i*n + j] = path.first;
-            dist[j*n + i] = path.first;
-            paths[n*i + j] = path.second;
-            paths[n*j + i] = path.second;
-
-            // Progress bar
+    // Progress bar lambda
+    auto find_path_between_tarns_wrapper = [&mux, &done, &total, &graph, &tarns](size_t i, size_t j) {
+        auto result = find_path_between_tarns(graph, tarns[i], tarns[j]);
+        {
+            std::lock_guard<std::mutex> lock(mux);
             done++;
             const unsigned int bar_width = 50;
             const unsigned int progress = (done * 100) / total;
@@ -97,6 +96,42 @@ std::pair<std::vector<double>, std::unordered_map<int, std::vector<const Node*>>
             std::cout << "] " << progress << " %\r";
             std::cout.flush();
         }
+        return std::make_tuple(result, i, j);
+    };
+    
+    std::vector<std::future<std::tuple<std::pair<double, std::vector<const Node*>>, size_t, size_t>>> futures;
+
+    // Compute distances from first tarn to all other tarns, set the best nodes for each tarn
+    for (size_t j = 1; j < n; j++) {
+        futures.push_back(std::async(std::launch::async, find_path_between_tarns_wrapper, 0, j));
+    }
+    // Wait for the futures to finish and set the distances and paths
+    for (auto& future : futures) {
+        auto result = future.get();
+        auto path = std::get<0>(result);
+        size_t i = std::get<1>(result);
+        size_t j = std::get<2>(result);
+        dist[i*n + j] = path.first;
+        dist[j*n + i] = path.first;
+        paths[n*i + j] = path.second;
+        paths[n*j + i] = path.second;
+    }
+    futures.clear();
+    // Compute remaning distance pairs
+    for (size_t i = 1; i < n; i++) {
+        for (size_t j = i + 1; j < n; j++) { // Only need to calculate distance between each pair once
+            futures.push_back(std::async(std::launch::async, find_path_between_tarns_wrapper, i, j));
+        }
+    }
+    for (auto& future : futures) {
+        auto result = future.get();
+        auto path = std::get<0>(result);
+        size_t i = std::get<1>(result);
+        size_t j = std::get<2>(result);
+        dist[i*n + j] = path.first;
+        dist[j*n + i] = path.first;
+        paths[n*i + j] = path.second;
+        paths[n*j + i] = path.second;
     }
 
     std::cout << std::endl;
@@ -107,7 +142,7 @@ std::pair<std::vector<double>, std::unordered_map<int, std::vector<const Node*>>
 void print_table(const std::vector<double>& table, const std::vector<std::string>& names) {
     const int n = std::sqrt(table.size());
     if (names.size() != n) {
-        std::cerr << "Error: Names vetor is the wrong length for the table" << std::endl;
+        std::cerr << "Error: Names vector is the wrong length for the table" << std::endl;
         return;
     }
     
