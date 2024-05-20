@@ -64,10 +64,12 @@ class Edge {
   std::vector<node_id_t> get_edge_nodes() const { return m_edge_nodes; }
 
   double cost() const {
-    return (Config::c.length_weight * m_length +
-            Config::c.elevation_weight * (m_slope + Config::c.max_slope) +
-            Config::c.cars_weight * (m_cars + 1) +
-            Config::c.difficulty_weight * (m_difficulty + 1));
+    const double cost =
+        Config::c.length_weight * m_length +
+        Config::c.elevation_weight * (m_slope + Config::c.max_slope) +
+        Config::c.cars_weight * (m_cars + 1) +
+        Config::c.difficulty_weight * (m_difficulty + 1);
+    return cost;
   }
 
   double elevation_change() const { return m_length * m_slope; }

@@ -5,9 +5,9 @@
     "PATH_DIR": "data/path/",
     "GPX_FILENAME": "full_path.gpx",
     "LENGTH_WEIGHT": 1.0,
-    "ELEVATION_WEIGHT": 2.0,
-    "DIFFICULTY_WEIGHT": 0.5,
-    "CARS_WEIGHT": 0.0,
+    "ELEVATION_WEIGHT": 0.2,
+    "DIFFICULTY_WEIGHT": 0.1,
+    "CARS_WEIGHT": 10.0,
     "MAX_SLOPE": 3.0,
     "MINIMUM_TARN_ELEVATION": 500,
     "MAXIMUM_TARN_ELEVATION": 800,
@@ -18,7 +18,8 @@
     "MAXIMUM_LONGITUDE": -3.0,
     "MIN_DIST_PER_DAY": 0.0,
     "COMPLETED_TARNS": {
-        "Three Tarns": 1
+        "Three Tarns": 1,
+        "Red Tarn": 1
     },
     "START_LOCATION": {
         "LATITUDE": 54.42357,

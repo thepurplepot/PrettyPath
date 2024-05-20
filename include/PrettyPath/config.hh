@@ -4,7 +4,7 @@
 #pragma once
 
 namespace Config {
-struct {
+struct config_t {
   std::string nodes_filename;
   std::string edges_filename;
   std::string tarns_filename;
@@ -25,7 +25,9 @@ struct {
   float min_dist_per_day;
   std::vector<std::string> completed_tarns;
   std::pair<double, double> start_location;
-} c = {};
+};
+
+extern config_t c;
 
 inline void get_config(std::string config_filename) {
   std::ifstream config_file(config_filename);

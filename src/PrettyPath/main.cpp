@@ -21,6 +21,8 @@ void handle_option(int argc, char** argv, std::string& config_filename) {
   }
 }
 
+Config::config_t Config::c;
+
 int main(int argc, char** argv) {
   std::string config_filename = "config.json";
   handle_option(argc, argv, config_filename);
