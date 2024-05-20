@@ -9,6 +9,7 @@ struct {
   std::string edges_filename;
   std::string tarns_filename;
   std::string path_dir;
+  std::string gpx_filename;
   float length_weight;
   float elevation_weight;
   float difficulty_weight;
@@ -22,6 +23,8 @@ struct {
   float minimum_longitude;
   float maximum_longitude;
   float min_dist_per_day;
+  std::vector<std::string> completed_tarns;
+  std::pair<double, double> start_location;
 } c = {};
 
 inline void get_config(std::string config_filename) {
@@ -38,6 +41,7 @@ inline void get_config(std::string config_filename) {
   c.edges_filename = config["EDGES_FILENAME"];
   c.tarns_filename = config["TARNS_FILENAME"];
   c.path_dir = config["PATH_DIR"];
+  c.gpx_filename = config["GPX_FILENAME"];
   c.length_weight = config["LENGTH_WEIGHT"];
   c.elevation_weight = config["ELEVATION_WEIGHT"];
   c.difficulty_weight = config["DIFFICULTY_WEIGHT"];
@@ -51,6 +55,23 @@ inline void get_config(std::string config_filename) {
   c.minimum_longitude = config["MINIMUM_LONGITUDE"];
   c.maximum_longitude = config["MAXIMUM_LONGITUDE"];
   c.min_dist_per_day = config["MIN_DIST_PER_DAY"];
+  nlohmann::json completed_tarns = config["COMPLETED_TARNS"];
+  for (nlohmann::json::iterator it = completed_tarns.begin();
+       it != completed_tarns.end(); ++it) {
+    if (it.value() == 1) {
+      c.completed_tarns.push_back(it.key());
+    }
+  }
+  nlohmann::json start_location = config["START_LOCATION"];
+  if (start_location != nullptr) {
+    if (start_location.find("LATITUDE") == start_location.end() ||
+        start_location.find("LONGITUDE") == start_location.end()) {
+      std::cerr << "Start location not specified" << std::endl;
+      exit(1);
+    }
+    c.start_location =
+        std::make_pair(start_location["LATITUDE"], start_location["LONGITUDE"]);
+  }
 
   // check all values are present
   if (c.nodes_filename.empty()) {
@@ -67,6 +88,10 @@ inline void get_config(std::string config_filename) {
   }
   if (c.path_dir.empty()) {
     std::cerr << "Path directory not specified" << std::endl;
+    exit(1);
+  }
+  if (c.gpx_filename.empty()) {
+    std::cerr << "GPX filename not specified" << std::endl;
     exit(1);
   }
 

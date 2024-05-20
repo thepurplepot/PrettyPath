@@ -195,17 +195,12 @@ std::vector<TarnData> Parser::read_tarn_data(const std::string& filename) {
   return tarn_data;
 }
 
-void Parser::write_path_to_py(const MapData& map_data, const Graph& graph,
-                              const std::vector<const Node*>& path,
-                              const std::string& filename) {
-  std::ofstream file(filename);
-  long node_counter = 0;
-  double total_length = 0;
+std::vector<std::pair<const long, const Node*>> Parser::path_to_node_list(
+    const MapData& map_data, const Graph& graph,
+    const std::vector<const Node*>& path) {
+  std::vector<std::pair<const long, const Node*>> node_list;
 
-  file << "id,lat,lon,length,elevation\n";
-  file << std::fixed << std::setprecision(6);
-
-  for (int i = 1; i < path.size(); i++) {
+  for (size_t i = 1; i < path.size(); i++) {
     const Node* node = path[i - 1];
     const Node* next_node = path[i];
     bool found_edge = false;
@@ -226,10 +221,6 @@ void Parser::write_path_to_py(const MapData& map_data, const Graph& graph,
       if (edge_pair.first == next_node) {
         found_edge = true;
         Edge edge = edge_pair.second;
-        // if (edge.get_difficulty() != 0) { //DEBUG
-        //     std::cerr << "Warning: Difficulty is not 0 for " <<
-        //     edge.get_osm_id() << std::endl;
-        // }
         // Check if the edge is in the correct direction
         edge.reverse_if_needed(node->get_id());
         auto edge_nodes = edge.get_edge_nodes();
@@ -243,23 +234,10 @@ void Parser::write_path_to_py(const MapData& map_data, const Graph& graph,
           edge_nodes.pop_back();  // Remove the end node from the edge (Prevent
                                   // duplicate nodes in the path)
         }
-        const long osm_id = edge.get_osm_id();
+        const long edge_id = edge.get_osm_id();
         for (auto it = edge_nodes.begin(); it != edge_nodes.end(); it++) {
-          float length = 0;
           const Node* edge_node = map_data.at(*it);
-          if (it + 1 != edge_nodes.end()) {
-            const Node* next_edge_node = map_data.at(*(it + 1));
-            const auto location = next_edge_node->get_location();
-            length = edge_node->distance_to(location.first, location.second);
-          } else {
-            const auto location = next_node->get_location();
-            length = edge_node->distance_to(location.first, location.second);
-          }
-          const auto location = edge_node->get_location();
-          file << osm_id << "," << location.first << "," << location.second
-               << "," << length << "," << edge_node->get_elevation() << "\n";
-          node_counter++;
-          total_length += length;
+          node_list.push_back(std::make_pair(edge_id, edge_node));
         }
         break;
       }
@@ -269,37 +247,109 @@ void Parser::write_path_to_py(const MapData& map_data, const Graph& graph,
                 << next_node->get_id() << std::endl;
     }
   }
+
+  return node_list;
+}
+
+void Parser::write_path_to_py(
+    const std::vector<std::pair<const long, const Node*>>& node_list,
+    const std::string& filename) {
+  std::ofstream file(filename);
+  long node_counter = 0;
+  double total_length = 0;
+
+  file << "id,lat,lon,length,elevation\n";
+  file << std::fixed << std::setprecision(6);
+
+  for (auto it = node_list.begin(); it != node_list.end(); it++) {
+    const long edge_id = it->first;
+    const Node* node = it->second;
+    const Node* next_node =
+        (it + 1 != node_list.end()) ? (it + 1)->second : nullptr;
+    const auto location = node->get_location();
+    double length = 0;
+    if (next_node != nullptr) {
+      const auto next_location = next_node->get_location();
+      length = node->distance_to(next_location.first, next_location.second);
+    }
+    file << edge_id << "," << location.first << "," << location.second << ","
+         << length << "," << node->get_elevation() << "\n";
+    node_counter++;
+    total_length += length;
+  }
+
   file.close();
   std::cout << "Wrote " << node_counter << " nodes to " << filename
             << std::endl;
   std::cout << "Total length: " << total_length / 1000.f << " km" << std::endl;
 }
 
+std::ofstream Parser::write_gpx_header(const std::string& file_name) {
+  std::ofstream file(file_name);
+  file << std::fixed << std::setprecision(6);
+
+  file << R"(<?xml version="1.0" encoding="UTF-8" standalone="no" ?>)"
+       << "\n";
+  file
+      << R"(<gpx xmlns="http://www.topografix.com/GPX/1/1" creator="PrettyPath" version="1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">)"
+      << "\n";
+
+  return file;
+}
+
+void Parser::write_gpx_waypoint(std::ofstream& file, const std::string& name,
+                                const double lat, const double lon,
+                                const double elevation) {
+  file << "<wpt lat=\"" << lat << "\" lon=\"" << lon << "\">\n";
+  file << "<name>" << name << "</name>\n";
+  file << "<ele>" << elevation << "</ele>\n";
+  file << "</wpt>\n";
+}
+
+void Parser::write_gpx_track_segment(
+    std::ofstream& file, const std::string& name,
+    const std::vector<std::pair<const long, const Node*>>& node_list) {
+  file << "<trk>\n";
+  file << "<name>" << name << "</name>\n";
+  file << "<trkseg>\n";
+  for (auto it = node_list.begin(); it != node_list.end(); it++) {
+    const Node* node = it->second;
+    if (node == nullptr) {
+      std::cerr << "Error: Node is null" << std::endl;
+      continue;
+    }
+    const auto location = node->get_location();
+
+    file << "<trkpt lat=\"" << location.first << "\" lon=\"" << location.second
+         << "\">\n";
+    file << "<ele>" << node->get_elevation() << "</ele>\n";
+    file << "</trkpt>\n";
+  }
+  file << "</trkseg>\n";
+  file << "</trk>\n";
+}
+
+void Parser::write_gpx_footer(std::ofstream& file) {
+  file << "</gpx>\n";
+  file.close();
+}
+
 void Parser::write_tarn_paths(
     const MapData& map_data, const Graph& graph,
     const std::pair<std::vector<std::pair<const TarnData, size_t>>,
                     std::vector<const Node*>>& tarns_path,
-    const std::string& file_dir) {
+    const std::string& file_dir, const std::string& gpx_filename) {
   auto tarns = tarns_path.first;
   auto path = tarns_path.second;
   size_t path_start = 0;
   size_t edges_written = 0;
+
   for (const auto& entry : std::filesystem::directory_iterator(file_dir)) {
     std::filesystem::remove(entry);
   }
-  // std::cout << "Full Path" << std::endl;
-  // size_t index = 0;
-  // int tarn_index = 0;
-  // for(size_t i = 0; i < path.size(); i++) {
-  //     const Node* node = path[i];
-  //     const auto tarn = tarns[tarn_index];
-  //     if(index == tarn.second) {
-  //         std::cout << "Tarn : " << tarns[++tarn_index].first.name <<
-  //         std::endl; index = 0;
-  //     }
-  //     std::cout << "Path node: " << node->get_id() << std::endl;
-  //     index ++;
-  // }
+
+  std::ofstream gpx = write_gpx_header(file_dir + gpx_filename);
+
   for (size_t i = 0; i < tarns.size() - 1; i++) {
     auto path_length = tarns[i].second;
     edges_written += path_length;
@@ -308,13 +358,23 @@ void Parser::write_tarn_paths(
     std::cout << "Writing path from " << start_tarn.name << " to "
               << end_tarn.name << " with " << path_length << " edges"
               << std::endl;
-    std::string filename = file_dir + start_tarn.name_without_spaces() +
-                           "_to_" + end_tarn.name_without_spaces() + ".csv";
+    std::string name = start_tarn.name_without_spaces() + "_to_" +
+                       end_tarn.name_without_spaces();
+    std::string filename = file_dir + name + ".csv";
     std::vector<const Node*> sub_path(path.begin() + path_start,
                                       path.begin() + path_start + path_length);
     path_start += path_length;
-    write_path_to_py(map_data, graph, sub_path, filename);
+    auto node_list = path_to_node_list(map_data, graph, sub_path);
+
+    write_gpx_waypoint(gpx, start_tarn.name, start_tarn.latitude,
+                       start_tarn.longitude, start_tarn.elevation);
+    write_gpx_track_segment(gpx, name, node_list);
+    write_path_to_py(node_list, filename);
   }
+  write_gpx_waypoint(gpx, tarns.back().first.name, tarns.back().first.latitude,
+                     tarns.back().first.longitude,
+                     tarns.back().first.elevation);
+  write_gpx_footer(gpx);
 }
 
 void Parser::clean_map_data(MapData& map_data) {

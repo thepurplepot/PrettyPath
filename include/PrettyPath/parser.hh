@@ -14,14 +14,31 @@ class Parser {
       const std::string& edge_nodes_string);
   static MapData read_map_data(Graph& graph);
   static std::vector<TarnData> read_tarn_data(const std::string& filename);
-  static void write_path_to_py(const MapData& map_data, const Graph& graph,
-                               const std::vector<const Node*>& path,
-                               const std::string& filename);
+  static std::vector<std::pair<const long, const Node*>> path_to_node_list(
+      const MapData& map_data, const Graph& graph,
+      const std::vector<const Node*>& path);
+  static void write_path_to_py(
+      const std::vector<std::pair<const long, const Node*>>& node_list,
+      const std::string& filename);
+  static std::ofstream write_gpx_header(const std::string& file_name);
+  static void write_gpx_waypoint(std::ofstream& file, const std::string& name,
+                                 const double lat, const double lon,
+                                 const double elevation);
+  static void write_gpx_track_segment(
+      std::ofstream& file, const std::string& name,
+      const std::vector<std::pair<const long, const Node*>>& node_list);
+  static void write_gpx_footer(std::ofstream& file);
+  //   static void write_path_to_gpx(
+  //       const std::vector<std::pair<const long, const Node*>>&
+  //       full_node_list, const std::vector<std::tuple<std::string, const
+  //       double, const double>>&
+  //           tarn_nodes,
+  //       const std::string& filename);
   static void write_tarn_paths(
       const MapData& map_data, const Graph& graph,
       const std::pair<std::vector<std::pair<const TarnData, size_t>>,
                       std::vector<const Node*>>& tarns_path,
-      const std::string& file_dir);
+      const std::string& file_dir, const std::string& gpx_filename);
   static void clean_map_data(MapData& map_data);
 
  private:

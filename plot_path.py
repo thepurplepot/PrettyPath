@@ -2,6 +2,7 @@ import staticmaps
 from PIL import Image, ImageDraw, ImageFont
 import os
 import sys
+import fnmatch
 
 font_path = "/System/Library/Fonts/Helvetica.ttc"
 regen_markers = True
@@ -86,8 +87,8 @@ def plot_paths(directory='data/path'):
     context = staticmaps.Context()
     context.set_tile_provider(staticmaps.tile_provider_OSM)
     for i, filename in enumerate(os.listdir(directory)):
-        # if not fnmatch.fnmatch(filename, 'path_*.csv'):
-        #     continue
+        if not fnmatch.fnmatch(filename, '*.csv'):
+            continue
 
         start_tarn, end_tarn = extract_tarn_names(filename)
         path = get_path(os.path.join(directory, filename))

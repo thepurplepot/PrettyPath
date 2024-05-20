@@ -11,13 +11,13 @@ std::vector<TarnData> filter_tarns(
     const std::vector<TarnData>& tarns, const double min_elevation,
     const double max_elevation, const long min_area, const double min_latitude,
     const double max_latitude, const double min_longitude,
-    const double max_longitude) {
+    const double max_longitude, const std::vector<std::string>& blacklist) {
   std::vector<TarnData> filtered_tarns;
 
   std::copy_if(
       tarns.begin(), tarns.end(), std::back_inserter(filtered_tarns),
       [min_elevation, max_elevation, min_area, min_latitude, max_latitude,
-       min_longitude, max_longitude](const TarnData& tarn) {
+       min_longitude, max_longitude, blacklist](const TarnData& tarn) {
         if (tarn.latitude < min_latitude || tarn.latitude > max_latitude ||
             tarn.longitude < min_longitude || tarn.longitude > max_longitude) {
           return false;
@@ -27,6 +27,11 @@ std::vector<TarnData> filter_tarns(
         }
         if (tarn.area < min_area) {
           return false;
+        }
+        for (const auto& name : blacklist) {
+          if (tarn.name == name) {
+            return false;
+          }
         }
         return true;
       });
@@ -69,6 +74,8 @@ double tsp(const int mask, const int pos, const int n,
   for (int i = 0; i < n; i++) {
     if ((mask & (1 << i)) == 0) {
       if (dist[pos * n + i] < min_dist_per_day) {
+        std::cout << "Skipping tarn " << i << " from tarn " << pos
+                  << " as distance is too short" << std::endl;
         continue;
       }
       valid_node_exists = true;
@@ -77,6 +84,7 @@ double tsp(const int mask, const int pos, const int n,
     }
   }
   if (!valid_node_exists) {
+    std::cout << "No valid tarns found from tarn " << pos << std::endl;
     return ans;  // Dont visit any more tarns
   }
   return dp[mask * n + pos] = ans;
@@ -190,6 +198,7 @@ void print_table(const std::vector<double>& table,
   }
 }
 
+// TODO check this
 std::pair<std::vector<std::pair<const TarnData, size_t>>,
           std::vector<const Node*>>
 reconstruct_path(const std::vector<TarnData>& tarns,
@@ -241,12 +250,16 @@ reconstruct_path(const std::vector<TarnData>& tarns,
   return std::make_pair(path, path_nodes);
 }
 
-// TODO add a start index??
 std::pair<std::vector<std::pair<const TarnData, size_t>>,
           std::vector<const Node*>>
-find_shortest_path_between_tarns(const Graph& graph,
-                                 std::vector<TarnData>& tarns,
-                                 const double min_dist_per_day) {
+find_shortest_path_between_tarns(
+    const Graph& graph, std::vector<TarnData>& tarns,
+    const double min_dist_per_day,
+    const std::pair<double, double>& start_location) {
+  if (start_location.first != 0 && start_location.second != 0) {
+    tarns.insert(tarns.begin(), TarnData("Start", start_location.first,
+                                         start_location.second, 0, 0, 0));
+  }
   const size_t n = tarns.size();
   auto paths_table = find_distances_between_tarns(graph, tarns);
   std::vector<double> dist = paths_table.first;
