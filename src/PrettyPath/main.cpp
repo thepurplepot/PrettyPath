@@ -28,21 +28,18 @@ int main(int argc, char** argv) {
   handle_option(argc, argv, config_filename);
 
   Config::get_config(config_filename);
+  Config::check_config();
+  Config::print_config();
 
   Parser parser(Config::c.nodes_filename, Config::c.edges_filename);
   Graph graph;
   MapData map = parser.read_map_data(graph);
   auto tarns = parser.read_tarn_data(Config::c.tarns_filename);
   auto filtered_tarns = TarnRouter::filter_tarns(
-      tarns, Config::c.minimum_tarn_elevation, Config::c.maximum_tarn_elevation,
-      Config::c.minimum_tarn_area, Config::c.minimum_latitude,
-      Config::c.maximum_latitude, Config::c.minimum_longitude,
-      Config::c.maximum_latitude, Config::c.completed_tarns);
-  std::cout << "Tarns must have an elevation between "
-            << Config::c.minimum_tarn_elevation << " and "
-            << Config::c.maximum_tarn_elevation << " m" << std::endl;
-  std::cout << "Tarns must have an area of at least "
-            << Config::c.minimum_tarn_area << " m^2" << std::endl;
+      tarns, Config::c.min_tarn_elevation, Config::c.max_tarn_elevation,
+      Config::c.min_tarn_area, Config::c.max_tarn_area, Config::c.min_latitude,
+      Config::c.max_latitude, Config::c.min_longitude, Config::c.max_latitude,
+      Config::c.tarn_blacklist);
   std::cout << "Filtered tarns:" << std::endl;
   for (auto tarn : filtered_tarns) {
     std::cout << "\"" << tarn.name << "\""
@@ -51,7 +48,7 @@ int main(int argc, char** argv) {
   }
   std::cout << std::endl;
   auto path = TarnRouter::find_shortest_path_between_tarns(
-      graph, filtered_tarns, Config::c.min_dist_per_day,
+      graph, filtered_tarns, Config::c.min_path_length,
       Config::c.start_location);
   auto tarn_path = path.first;
   if (path.first.empty()) {
@@ -65,7 +62,7 @@ int main(int argc, char** argv) {
       std::cout << tarn.name << " at (" << tarn.latitude << ", "
                 << tarn.longitude << ")" << std::endl;
     }
-    parser.write_tarn_paths(map, graph, path, Config::c.path_dir,
+    parser.write_tarn_paths(map, graph, path, Config::c.output_dir,
                             Config::c.gpx_filename);
   }
   parser.clean_map_data(map);

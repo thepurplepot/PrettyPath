@@ -368,6 +368,7 @@ void Parser::write_tarn_paths(
 
     write_gpx_waypoint(gpx, start_tarn.name, start_tarn.latitude,
                        start_tarn.longitude, start_tarn.elevation);
+
     write_gpx_track_segment(gpx, name, node_list);
     write_path_to_py(node_list, filename);
   }

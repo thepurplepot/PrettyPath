@@ -4,9 +4,10 @@
 namespace TarnRouter {
 std::vector<TarnData> filter_tarns(
     const std::vector<TarnData>& tarns, const double min_elevation,
-    const double max_elevation, const long min_area, const double min_latitude,
-    const double max_latitude, const double min_longitude,
-    const double max_longitude, const std::vector<std::string>& blacklist);
+    const double max_elevation, const double min_area, const double max_area,
+    const double min_latitude, const double max_latitude,
+    const double min_longitude, const double max_longitude,
+    const std::vector<std::string>& blacklist);
 std::pair<double, std::vector<const Node*>> find_path_between_tarns(
     const Graph& graph, TarnData& tarn1, TarnData& tarn2);
 double tsp(const int mask, const int pos, const int n,
