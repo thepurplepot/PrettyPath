@@ -9,15 +9,17 @@
 namespace TarnRouter {
 std::vector<TarnData> filter_tarns(
     const std::vector<TarnData>& tarns, const double min_elevation,
-    const double max_elevation, const long min_area, const double min_latitude,
-    const double max_latitude, const double min_longitude,
-    const double max_longitude, const std::vector<std::string>& blacklist) {
+    const double max_elevation, const double min_area, const double max_area,
+    const double min_latitude, const double max_latitude,
+    const double min_longitude, const double max_longitude,
+    const std::vector<std::string>& blacklist) {
   std::vector<TarnData> filtered_tarns;
 
   std::copy_if(
       tarns.begin(), tarns.end(), std::back_inserter(filtered_tarns),
-      [min_elevation, max_elevation, min_area, min_latitude, max_latitude,
-       min_longitude, max_longitude, blacklist](const TarnData& tarn) {
+      [min_elevation, max_elevation, min_area, max_area, min_latitude,
+       max_latitude, min_longitude, max_longitude,
+       blacklist](const TarnData& tarn) {
         if (tarn.latitude < min_latitude || tarn.latitude > max_latitude ||
             tarn.longitude < min_longitude || tarn.longitude > max_longitude) {
           return false;
@@ -25,7 +27,7 @@ std::vector<TarnData> filter_tarns(
         if (tarn.elevation < min_elevation || tarn.elevation > max_elevation) {
           return false;
         }
-        if (tarn.area < min_area) {
+        if (tarn.area < min_area || tarn.area > max_area) {
           return false;
         }
         for (const auto& name : blacklist) {
@@ -74,8 +76,6 @@ double tsp(const int mask, const int pos, const int n,
   for (int i = 0; i < n; i++) {
     if ((mask & (1 << i)) == 0) {
       if (dist[pos * n + i] < min_dist_per_day) {
-        std::cout << "Skipping tarn " << i << " from tarn " << pos
-                  << " as distance is too short" << std::endl;
         continue;
       }
       valid_node_exists = true;
