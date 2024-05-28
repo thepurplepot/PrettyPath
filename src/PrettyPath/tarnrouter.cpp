@@ -297,6 +297,7 @@ find_shortest_path_between_ordered_tarns(
 
   for (size_t i = 1; i < tarn.size(); i++) {
     auto path = find_path_between_tarns(graph, tarn[i - 1], tarn[i]);
+    done++;
     result.first.push_back(std::make_pair(tarn[i - 1], path.second.size()));
     result.second.insert(result.second.end(), path.second.begin(),
                          path.second.end());
@@ -316,7 +317,7 @@ find_shortest_path_between_ordered_tarns(
     std::cout.flush();
   }
   std::cout << std::endl;
-  
+
   result.first.push_back(std::make_pair(tarn.back(), 0));
   return result;
 }

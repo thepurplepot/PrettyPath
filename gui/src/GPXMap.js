@@ -32,7 +32,12 @@ function MapBoundsUpdater({ setBounds }) {
   return null;
 }
 
-function DraggableMarker({ position, setPosition, color = "green" }) {
+function DraggableMarker({
+  position,
+  setPosition,
+  color = "green",
+  name = "Start",
+}) {
   const [draggable, setDraggable] = useState(false);
   const markerRef = useRef(null);
   const eventHandlers = useMemo(
@@ -62,12 +67,13 @@ function DraggableMarker({ position, setPosition, color = "green" }) {
         markerColor: color,
       })}
     >
-      <Popup minWidth={90}>
-        <span onClick={toggleDraggable}>
-          {draggable
-            ? "Marker is draggable"
-            : "Click here to make marker draggable"}
-        </span>
+      <Popup>
+        <div onClick={toggleDraggable}>
+          <h3 className="text-base font-bold">{name}</h3>
+          <p className="text-sm">
+            {draggable ? "Click to anchor" : "Click to drag"}
+          </p>
+        </div>
       </Popup>
     </Marker>
   );
@@ -200,10 +206,11 @@ function GPXLayer({
                   for (let i = 0; i < latlngs.length - 1; i++) {
                     length += latlngs[i].distanceTo(latlngs[i + 1]);
                   }
+                  length = (length / 1000).toFixed(2);
                   window.L.popup()
                     .setLatLng(e.latlng)
                     .setContent(
-                      `<p style="color: ${color}; font-size: 16px;">Length: ${length} m</p>`
+                      `<p style="color: ${color}; font-size: 16px;">Length: ${length} km</p>`
                     )
                     .openOn(map);
                 });

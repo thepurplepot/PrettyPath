@@ -2,7 +2,7 @@
   "filenames": {
     "map_nodes": "data/nodes.csv",
     "map_edges": "data/edges.csv",
-    "map_tarns": "data/tarns.csv",
+    "map_tarns": "data/tarns.json",
     "output_dir": "data/path/",
     "gpx": "full_path.gpx"
   },
@@ -13,10 +13,10 @@
     "cars_weight": 10
   },
   "map_constraints": {
-    "min_latitude": 54.37775796229027,
-    "max_latitude": 54.535027711199426,
-    "min_longitude": -3.272552490234375,
-    "max_longitude": -2.753448486328125
+    "min_latitude": 54.39734979806855,
+    "max_latitude": 54.554544410585606,
+    "min_longitude": -3.2890319824218754,
+    "max_longitude": -2.7699279785156254
   },
   "path_constraints": {
     "max_length": 10000,
@@ -30,15 +30,6 @@
     }
   },
   "tarn_constraints": {
-    "min_elevation": 0,
-    "max_elevation": 1000,
-    "min_area": 20836.40252874553,
-    "max_area": 99999.99999999984,
-    "blacklist": [
-      "Borrans Reservoir",
-      "Dubbs Reservoir",
-      "Kentmere Tarn",
-      "Skeggles Water"
-    ]
+    "use_ordered_tarns": true
   }
 }

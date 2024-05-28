@@ -2,17 +2,18 @@ import { useEffect } from "react";
 import { Marker, Popup } from "react-leaflet";
 import Papa from "papaparse";
 
-function TarnLayer({ tarns, setTarns, orderedTarns, setOrderedTarns, constraints }) {
-
+function TarnLayer({
+  tarns,
+  setTarns,
+  orderedTarns,
+  setOrderedTarns,
+  constraints,
+}) {
   const orderTarn = (tarn) => {
-    if(orderedTarns.find((orderedTarn) => orderedTarn.name === tarn.name)) {
+    if (orderedTarns.find((orderedTarn) => orderedTarn.name === tarn.name)) {
       return;
     }
     setOrderedTarns((prev) => [...prev, tarn]);
-  };
-
-  const resetOrder = () => {
-    setOrderedTarns([]);
   };
 
   useEffect(() => {
@@ -35,8 +36,8 @@ function TarnLayer({ tarns, setTarns, orderedTarns, setOrderedTarns, constraints
                   row.elevation >= constraints.elevation[0]) &&
                 (!constraints.elevation[1] ||
                   row.elevation <= constraints.elevation[1]) //&&
-                // (!constraints.blacklist ||
-                //   !constraints.blacklist.includes(row.name))
+              // (!constraints.blacklist ||
+              //   !constraints.blacklist.includes(row.name))
             )
             .map((row) => ({
               position: [row.lat, row.lon],
@@ -57,29 +58,24 @@ function TarnLayer({ tarns, setTarns, orderedTarns, setOrderedTarns, constraints
       icon={window.L.AwesomeMarkers.icon({
         icon: "flag",
         prefix: "fa",
-        markerColor: constraints.blacklist.includes(tarn.name) ? "black" : "orange",
+        markerColor: constraints.blacklist.includes(tarn.name)
+          ? "black"
+          : "orange",
       })}
       eventHandlers={{
         click: () => {
-          orderTarn(tarn);
+          if (constraints.useOrderedTarns) {
+            orderTarn(tarn);
+          }
         },
-        dblclick: () => {
-          resetOrder();
-        }
-        
       }}
     >
       <Popup>
         <div>
-          <h2>{tarn.name}</h2>
-          <p>
-            Index:{" "}
-            {
-              orderedTarns.findIndex((orderedTarn) => orderedTarn.name === tarn.name)
-            }
+          <h3 className="text-base font-bold">{tarn.name}</h3>
+          <p className="text-sm">
+            Area: {tarn.area} m, Elevation: {tarn.elevation} m²
           </p>
-          <p>Area: {tarn.area} m</p>
-          <p>Elevation: {tarn.elevation} m²</p>
         </div>
       </Popup>
     </Marker>

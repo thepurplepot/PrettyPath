@@ -184,6 +184,14 @@ bool osmparser::Handler::is_walkable(const osmium::TagList& tags) {
     if (std::strcmp(natural, "water") == 0) return false;
   }
 
+  const char* water = tags["water"];
+  if (water) {
+    if (std::strcmp(water, "river") == 0 ||
+        std::strcmp(water, "stream") == 0) {
+      return false;
+    }
+  }
+
   return true;
 }
 

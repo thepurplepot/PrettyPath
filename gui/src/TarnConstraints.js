@@ -161,7 +161,7 @@ function TarnConstraints() {
       onClick={(e) => console.log(e)}
     >
       <Interval label="elevation" min={0} max={1000} />
-      <Interval label="area" min={300} max={100000} scale={"log"} />
+      <Interval label="area" min={100} max={100000} scale={"log"} />
       <Checkbox label="useOrderedTarns" />
       {/* <Custom Comp={({ theme }) => <TarnList theme={theme} />} /> */}
     </ControlPanel>
