@@ -34,5 +34,6 @@ bool find_connected_start_and_goal(const Graph& graph, const Node*& start,
                                    const Node*& goal);
 void print_path(const std::vector<Node*>& path);
 double get_path_length(const std::vector<const Node*>& path);
+bool is_valid_edge(const Edge& edge);
 
 }  // namespace Pathfinder

@@ -291,12 +291,32 @@ find_shortest_path_between_ordered_tarns(
     tarn.insert(tarn.begin(), TarnData("Start", start_location.first,
                                        start_location.second, 0, 0, 0));
   }
+
+  const size_t total = tarn.size() - 1;
+  size_t done = 0;
+
   for (size_t i = 1; i < tarn.size(); i++) {
     auto path = find_path_between_tarns(graph, tarn[i - 1], tarn[i]);
     result.first.push_back(std::make_pair(tarn[i - 1], path.second.size()));
     result.second.insert(result.second.end(), path.second.begin(),
                          path.second.end());
+    const unsigned int bar_width = 50;
+    const unsigned int progress = (done * 100) / total;
+    std::cout << "\rProgress: [";
+    const unsigned int pos = bar_width * progress / 100;
+    for (int p = 0; p < 50; p++) {
+      if (p < pos)
+        std::cout << "=";
+      else if (p == pos)
+        std::cout << ">";
+      else
+        std::cout << " ";
+    }
+    std::cout << "] " << progress << " %\r";
+    std::cout.flush();
   }
+  std::cout << std::endl;
+  
   result.first.push_back(std::make_pair(tarn.back(), 0));
   return result;
 }

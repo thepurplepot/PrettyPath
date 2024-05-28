@@ -6,6 +6,10 @@ const { spawn } = require("child_process");
 
 const app = express();
 const port = 3001;
+const exePath = path.join(__dirname, "../Release/PrettyPath");
+const configPath = path.join(__dirname, "../config.json");
+const tarnsPath = path.join(__dirname, "../data/tarns.csv");
+const tarnsJSONPath = path.join(__dirname, "../data/tarns.json");
 
 app.use(cors());
 
@@ -16,7 +20,7 @@ app.post("/config", (req, res) => {
   const data = req.body;
 
   fs.writeFileSync(
-    path.join(__dirname, "../config.json"),
+    configPath,
     JSON.stringify(data, null, 2),
     (err) => {
       if (err) {
@@ -33,7 +37,7 @@ app.post("/config", (req, res) => {
 
 app.post("/run", (_, res) => {
   console.log("Running executable");
-  const child = spawn(path.join(__dirname, "../Release/PrettyPath"), [], {
+  const child = spawn(exePath, [], {
     cwd: "../",
   });
 
@@ -58,7 +62,6 @@ app.post("/run", (_, res) => {
 });
 
 app.get("/tarns", (_, res) => {
-  const tarnsPath = path.join(__dirname, "../data/tarns.csv");
   if (fs.existsSync(tarnsPath)) {
     fs.readFile(tarnsPath, "utf8", (err, data) => {
       if (err) {
@@ -76,9 +79,8 @@ app.get("/tarns", (_, res) => {
 
 app.post("/tarns", (req, res) => {
   const tarns = req.body;
-  const tarnsPath = path.join(__dirname, "../data/tarns.json");
 
-  fs.writeFileSync(tarnsPath, JSON.stringify(tarns, null, 2), (err) => {
+  fs.writeFileSync(tarnsJSONPath, JSON.stringify(tarns, null, 2), (err) => {
     if (err) {
       console.error(err);
       res.status(500).send("Error saving config");

@@ -258,7 +258,7 @@ export default function GPXMap({ gpxUrl }) {
     length: [0, 10000],
     maxElevation: 1000,
     maxDifficulty: 3,
-    maxCars: 1,
+    maxCars: 4,
   });
   const [fileNames, setFileNames] = useState({
     map_nodes: "data/nodes.csv",

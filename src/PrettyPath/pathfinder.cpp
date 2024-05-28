@@ -220,6 +220,10 @@ std::vector<const Node*> a_star(const Graph& graph, const Node*& start,
       const Node* neighbour = pair.first;
       const Edge& edge = pair.second;
 
+      if (!is_valid_edge(edge)) {
+        continue; // Skip invalid edges (config constraints)
+      }
+
       const double tentative_g_score = g_score[current] + edge.cost();
       if (tentative_g_score < g_score[neighbour]) {
         came_from[neighbour] = current;
@@ -232,6 +236,16 @@ std::vector<const Node*> a_star(const Graph& graph, const Node*& start,
       }
     }
   }
+}
+
+bool is_valid_edge(const Edge& edge) {
+  if (edge.get_difficulty() > Config::c.max_difficulty) {
+    return false;
+  }
+  if (edge.get_cars() > Config::c.max_cars) {
+    return false;
+  }
+  return true;
 }
 
 void print_path(const std::vector<const Node*>& path) {

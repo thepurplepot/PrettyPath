@@ -50,9 +50,9 @@ class Edge {
 
   long get_osm_id() const { return m_osm_id; }
 
-  int get_difficulty() const {  // DEBUG
-    return m_difficulty;
-  }
+  int get_difficulty() const { return m_difficulty; }
+
+  int get_cars() const { return m_cars; }
 
   void reverse_if_needed(node_id_t desired_source_id) {
     if (desired_source_id == m_edge_nodes.front()) {
@@ -64,10 +64,11 @@ class Edge {
   std::vector<node_id_t> get_edge_nodes() const { return m_edge_nodes; }
 
   double cost() const {
-    const double cost = Config::c.length_weight * m_length +
-                        Config::c.elevation_weight * (m_slope + 3) + //TODO fix
-                        Config::c.cars_weight * m_cars +
-                        Config::c.difficulty_weight * m_difficulty;
+    const double cost =
+        Config::c.length_weight * m_length +
+        Config::c.elevation_weight * (m_slope + 3) +  // TODO fix
+        Config::c.cars_weight * m_cars +
+        Config::c.difficulty_weight * m_difficulty;
     return cost;
   }
 

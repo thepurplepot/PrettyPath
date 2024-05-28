@@ -27,8 +27,8 @@ struct config_t {
   float max_path_length;  // TODO unused
   float min_path_length;
   float max_elevation_gain;  // TODO unused
-  int max_dificulty;         // TODO unused
-  int max_cars;              // TODO unused
+  int max_difficulty;
+  int max_cars;
   std::pair<double, double> start_location;
   // Map Constraints
   float min_latitude;
@@ -87,7 +87,7 @@ inline void get_config(std::string config_filename) {
   c.max_path_length = path_constraints["max_length"];
   c.min_path_length = path_constraints["min_length"];
   c.max_elevation_gain = path_constraints["max_elevation"];
-  c.max_dificulty = path_constraints["max_difficulty"];
+  c.max_difficulty = path_constraints["max_difficulty"];
   c.max_cars = path_constraints["max_cars"];
   if (path_constraints.find("start_location") != path_constraints.end())
     c.start_location =
@@ -177,7 +177,7 @@ inline void print_config() {
   std::cout << "\t\tMinimum path length: " << c.min_path_length << std::endl;
   std::cout << "\t\tMaximum elevation gain: " << c.max_elevation_gain
             << std::endl;
-  std::cout << "\t\tMaximum difficulty: " << c.max_dificulty << std::endl;
+  std::cout << "\t\tMaximum difficulty: " << c.max_difficulty << std::endl;
   std::cout << "\t\tMaximum cars: " << c.max_cars << std::endl;
   std::cout << "\t\tStart location: (" << c.start_location.first << ", "
             << c.start_location.second << ")" << std::endl;
@@ -187,96 +187,4 @@ inline void print_config() {
   std::cout << "\t\tMinimum longitude: " << c.min_longitude << std::endl;
   std::cout << "\t\tMaximum longitude: " << c.max_longitude << std::endl;
 }
-
-// inline void get_config(std::string config_filename) {
-//   std::ifstream config_file(config_filename);
-//   if (!config_file.is_open()) {
-//     std::cerr << "Could not open config file" << std::endl;
-//     exit(1);
-//   }
-
-//   nlohmann::json config;
-//   config_file >> config;
-
-//   c.nodes_filename = config["NODES_FILENAME"];
-//   c.edges_filename = config["EDGES_FILENAME"];
-//   c.tarns_filename = config["TARNS_FILENAME"];
-//   c.output_dir = config["PATH_DIR"];
-//   c.gpx_filename = config["GPX_FILENAME"];
-//   c.length_weight = config["LENGTH_WEIGHT"];
-//   c.elevation_weight = config["ELEVATION_WEIGHT"];
-//   c.difficulty_weight = config["DIFFICULTY_WEIGHT"];
-//   c.cars_weight = config["CARS_WEIGHT"];
-//   c.max_slope = config["MAX_SLOPE"];
-//   c.minimum_tarn_elevation = config["MINIMUM_TARN_ELEVATION"];
-//   c.maximum_tarn_elevation = config["MAXIMUM_TARN_ELEVATION"];
-//   c.minimum_tarn_area = config["MINIMUM_TARN_AREA"];
-//   c.minimum_latitude = config["MINIMUM_LATITUDE"];
-//   c.maximum_latitude = config["MAXIMUM_LATITUDE"];
-//   c.minimum_longitude = config["MINIMUM_LONGITUDE"];
-//   c.maximum_longitude = config["MAXIMUM_LONGITUDE"];
-//   c.min_dist_per_day = config["MIN_DIST_PER_DAY"];
-//   nlohmann::json completed_tarns = config["COMPLETED_TARNS"];
-//   for (nlohmann::json::iterator it = completed_tarns.begin();
-//        it != completed_tarns.end(); ++it) {
-//     if (it.value() == 1) {
-//       c.tarn_blacklist.push_back(it.key());
-//     }
-//   }
-//   nlohmann::json start_location = config["START_LOCATION"];
-//   if (start_location != nullptr) {
-//     if (start_location.find("LATITUDE") == start_location.end() ||
-//         start_location.find("LONGITUDE") == start_location.end()) {
-//       std::cerr << "Start location not specified" << std::endl;
-//       exit(1);
-//     }
-//     c.start_location =
-//         std::make_pair(start_location["LATITUDE"],
-//         start_location["LONGITUDE"]);
-//   }
-
-//   // check all values are present
-//   if (c.nodes_filename.empty()) {
-//     std::cerr << "Nodes filename not specified" << std::endl;
-//     exit(1);
-//   }
-//   if (c.edges_filename.empty()) {
-//     std::cerr << "Edges filename not specified" << std::endl;
-//     exit(1);
-//   }
-//   if (c.tarns_filename.empty()) {
-//     std::cerr << "Tarns filename not specified" << std::endl;
-//     exit(1);
-//   }
-//   if (c.output_dir.empty()) {
-//     std::cerr << "Path directory not specified" << std::endl;
-//     exit(1);
-//   }
-//   if (c.gpx_filename.empty()) {
-//     std::cerr << "GPX filename not specified" << std::endl;
-//     exit(1);
-//   }
-
-//   // check min and max values
-//   if (c.minimum_tarn_elevation > c.maximum_tarn_elevation) {
-//     std::cerr << "Minimum tarn elevation must be less than or equal to
-//     maximum "
-//                  "tarn elevation"
-//               << std::endl;
-//     exit(1);
-//   }
-//   if (c.minimum_latitude > c.maximum_latitude) {
-//     std::cerr
-//         << "Minimum latitude must be less than or equal to maximum latitude"
-//         << std::endl;
-//     exit(1);
-//   }
-//   if (c.minimum_longitude > c.maximum_longitude) {
-//     std::cerr
-//         << "Minimum longitude must be less than or equal to maximum
-//         longitude"
-//         << std::endl;
-//     exit(1);
-//   }
-// }
 }  // namespace Config

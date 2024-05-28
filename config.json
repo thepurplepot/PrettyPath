@@ -10,32 +10,35 @@
     "length_weight": 1,
     "elevation_weight": 0.2,
     "difficulty_weight": 0.1,
-    "cars_weight": 5.9
+    "cars_weight": 10
   },
   "map_constraints": {
-    "min_latitude": 54.38365768208856,
-    "max_latitude": 54.534331702564394,
-    "min_longitude": -3.2632829849868976,
-    "max_longitude": -2.911205500856038
+    "min_latitude": 54.37775796229027,
+    "max_latitude": 54.535027711199426,
+    "min_longitude": -3.272552490234375,
+    "max_longitude": -2.753448486328125
   },
   "path_constraints": {
     "max_length": 10000,
     "min_length": 0,
     "max_elevation": 1000,
     "max_difficulty": 3,
-    "max_cars": 1,
+    "max_cars": 4,
     "start_location": {
       "latitude": 54.422426,
       "longitude": -3.012657
     }
   },
   "tarn_constraints": {
-    "min_elevation": 710,
+    "min_elevation": 0,
     "max_elevation": 1000,
-    "min_area": 300,
+    "min_area": 20836.40252874553,
     "max_area": 99999.99999999984,
     "blacklist": [
-      "Three Tarns"
+      "Borrans Reservoir",
+      "Dubbs Reservoir",
+      "Kentmere Tarn",
+      "Skeggles Water"
     ]
   }
 }

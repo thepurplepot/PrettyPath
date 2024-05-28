@@ -28,6 +28,13 @@ void osmparser::Handler::way(const osmium::Way& way) {
   std::string tarn_name = is_tarn(way.tags());
   const bool walkable = is_walkable(way.tags());
 
+  if (!tarn_name.empty() && walkable) {  // TODO debug
+    std::cout << "ERROR: Tarn is walkable\n";
+    for (const auto& tag : way.tags()) {
+      std::cout << "Tag: " << tag.key() << " = " << tag.value() << std::endl;
+    }
+  }
+
   if (!walkable && tarn_name.empty()) {
     return;  // Skip all non tarns and non-walkable ways
   }
@@ -135,14 +142,10 @@ std::string osmparser::Handler::is_tarn(const osmium::TagList& tags) {
   const char* natural = tags["natural"];
   if (natural) {
     if (std::strcmp(natural, "water") == 0) {
-      // std::cout << "Found water\n";
-      // for (const auto& tag : tags) {
-      //     std::cout << "Tag: " << tag.key() << " = " << tag.value() <<
-      //     std::endl;
-      // }
       const char* water = tags["water"];
       if (water) {
-        if (std::strcmp(water, "river") != 0) {
+        if (std::strcmp(water, "river") != 0 &&
+            std::strcmp(water, "stream") != 0) {
           const char* name = tags["name"];
           if (name) {
             return name;
@@ -159,6 +162,7 @@ std::string osmparser::Handler::is_tarn(const osmium::TagList& tags) {
   return std::string();
 }
 
+//TODO: fix (rivers, boundaries are being set as walkable)
 bool osmparser::Handler::is_walkable(const osmium::TagList& tags) {
   const char* foot = tags["foot"];
   if (foot) {
@@ -173,6 +177,11 @@ bool osmparser::Handler::is_walkable(const osmium::TagList& tags) {
         std::strcmp(highway, "trunk") == 0 ||
         std::strcmp(highway, "trunk_link") == 0)
       return false;
+  }
+
+  const char* natural = tags["natural"];
+  if (natural) {
+    if (std::strcmp(natural, "water") == 0) return false;
   }
 
   return true;

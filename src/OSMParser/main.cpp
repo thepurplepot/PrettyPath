@@ -20,6 +20,7 @@ void handel_args(int argc, char* argv[], std::string& osm_filename,
 int main(int argc, char* argv[]) {
   std::string osm_filename = "data/cumbria-latest.osm.pbf";
   std::string elevation_filename = "data/topography.tif";
+  //TODO: Allow non hardcoded filenames
   std::string edges_filename = "data/edges.csv";
   std::string nodes_filename = "data/nodes.csv";
   std::string tarns_filename = "data/tarns.csv";
