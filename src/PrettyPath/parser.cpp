@@ -1,5 +1,6 @@
 #include "parser.hh"
 #include <filesystem>
+#include <nlohmann/json.hpp>
 
 // Allocate memory for static variables
 std::string Parser::m_nodes_filename;
@@ -188,6 +189,34 @@ std::vector<TarnData> Parser::read_tarn_data(const std::string& filename) {
 
     tarn_data.push_back(
         TarnData(name, latitude, longitude, osm_id, elevation, area));
+  }
+
+  tarns_file.close();
+
+  return tarn_data;
+}
+
+std::vector<TarnData> Parser::read_ordered_tarn_data(const std::string& filename) {
+  std::vector<TarnData> tarn_data;
+
+  std::ifstream tarns_file(filename);
+  if (!tarns_file.is_open()) {
+    std::cerr << "Error: Could not open file " << filename << std::endl;
+    return tarn_data;
+  }
+
+  nlohmann::json tarns;
+  tarns_file >> tarns;
+
+  for (const auto& tarn : tarns) {
+    std::string name = tarn["name"];
+    double latitude = tarn["position"][0];
+    double longitude = tarn["position"][1];
+    long osm_id = 0;
+    float elevation = tarn["elevation"];
+    unsigned long area = tarn["area"];
+    tarn_data.push_back(TarnData(name, latitude, longitude, osm_id, elevation,
+                                 area));
   }
 
   tarns_file.close();

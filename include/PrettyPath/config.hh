@@ -22,12 +22,13 @@ struct config_t {
   float min_tarn_area;
   float max_tarn_area;
   std::vector<std::string> tarn_blacklist;
+  bool use_ordered_tarns = false;
   // Path Constraints
-  float max_path_length; //TODO unused
+  float max_path_length;  // TODO unused
   float min_path_length;
-  float max_elevation_gain; //TODO unused
-  int max_dificulty; //TODO unused
-  int max_cars; //TODO unused
+  float max_elevation_gain;  // TODO unused
+  int max_dificulty;         // TODO unused
+  int max_cars;              // TODO unused
   std::pair<double, double> start_location;
   // Map Constraints
   float min_latitude;
@@ -67,14 +68,18 @@ inline void get_config(std::string config_filename) {
   c.difficulty_weight = weights["difficulty_weight"];
   c.cars_weight = weights["cars_weight"];
   nlohmann::json tarn_constraints = config["tarn_constraints"];
-  c.min_tarn_elevation = tarn_constraints["min_elevation"];
-  c.max_tarn_elevation = tarn_constraints["max_elevation"];
-  c.min_tarn_area = tarn_constraints["min_area"];
-  c.max_tarn_area = tarn_constraints["max_area"];
-  if (tarn_constraints.find("blacklist") != tarn_constraints.end()) {
-    for (nlohmann::json::iterator it = tarn_constraints["blacklist"].begin();
-         it != tarn_constraints["blacklist"].end(); ++it) {
-      c.tarn_blacklist.push_back(it.value());
+  if (tarn_constraints.find("use_ordered_tarns") != tarn_constraints.end())
+    c.use_ordered_tarns = tarn_constraints["use_ordered_tarns"];
+  else {
+    c.min_tarn_elevation = tarn_constraints["min_elevation"];
+    c.max_tarn_elevation = tarn_constraints["max_elevation"];
+    c.min_tarn_area = tarn_constraints["min_area"];
+    c.max_tarn_area = tarn_constraints["max_area"];
+    if (tarn_constraints.find("blacklist") != tarn_constraints.end()) {
+      for (nlohmann::json::iterator it = tarn_constraints["blacklist"].begin();
+           it != tarn_constraints["blacklist"].end(); ++it) {
+        c.tarn_blacklist.push_back(it.value());
+      }
     }
   }
   nlohmann::json path_constraints = config["path_constraints"];
@@ -157,8 +162,10 @@ inline void print_config() {
   std::cout << "\t\tDifficulty weight: " << c.difficulty_weight << std::endl;
   std::cout << "\t\tCars weight: " << c.cars_weight << std::endl;
   std::cout << "\tTarn constraints:" << std::endl;
-  std::cout << "\t\tMinimum tarn elevation: " << c.min_tarn_elevation << std::endl;
-  std::cout << "\t\tMaximum tarn elevation: " << c.max_tarn_elevation << std::endl;
+  std::cout << "\t\tMinimum tarn elevation: " << c.min_tarn_elevation
+            << std::endl;
+  std::cout << "\t\tMaximum tarn elevation: " << c.max_tarn_elevation
+            << std::endl;
   std::cout << "\t\tMinimum tarn area: " << c.min_tarn_area << std::endl;
   std::cout << "\t\tMaximum tarn area: " << c.max_tarn_area << std::endl;
   std::cout << "\t\tTarn blacklist:" << std::endl;
@@ -168,7 +175,8 @@ inline void print_config() {
   std::cout << "\tPath constraints:" << std::endl;
   std::cout << "\t\tMaximum path length: " << c.max_path_length << std::endl;
   std::cout << "\t\tMinimum path length: " << c.min_path_length << std::endl;
-  std::cout << "\t\tMaximum elevation gain: " << c.max_elevation_gain << std::endl;
+  std::cout << "\t\tMaximum elevation gain: " << c.max_elevation_gain
+            << std::endl;
   std::cout << "\t\tMaximum difficulty: " << c.max_dificulty << std::endl;
   std::cout << "\t\tMaximum cars: " << c.max_cars << std::endl;
   std::cout << "\t\tStart location: (" << c.start_location.first << ", "

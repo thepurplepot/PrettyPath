@@ -29,4 +29,9 @@ find_shortest_path_between_tarns(
     const Graph& graph, std::vector<TarnData>& tarn,
     const double min_dist_per_day,
     const std::pair<double, double>& start_location = {0, 0});
+std::pair<std::vector<std::pair<const TarnData, size_t>>,
+          std::vector<const Node*>>
+find_shortest_path_between_ordered_tarns(
+    const Graph& graph, std::vector<TarnData>& tarn,
+    const std::pair<double, double>& start_location = {0, 0});
 }  // namespace TarnRouter

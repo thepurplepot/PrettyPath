@@ -14,6 +14,8 @@ class Parser {
       const std::string& edge_nodes_string);
   static MapData read_map_data(Graph& graph);
   static std::vector<TarnData> read_tarn_data(const std::string& filename);
+  static std::vector<TarnData> read_ordered_tarn_data(
+      const std::string& filename);
   static std::vector<std::pair<const long, const Node*>> path_to_node_list(
       const MapData& map_data, const Graph& graph,
       const std::vector<const Node*>& path);

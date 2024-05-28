@@ -2,7 +2,7 @@ const express = require("express");
 const path = require("path");
 const cors = require("cors");
 const fs = require("fs");
-const { exec } = require("child_process");
+const { spawn } = require("child_process");
 
 const app = express();
 const port = 3001;
@@ -16,7 +16,7 @@ app.post("/config", (req, res) => {
   const data = req.body;
 
   fs.writeFileSync(
-    path.join(__dirname, "../data/path/config.json"),
+    path.join(__dirname, "../config.json"),
     JSON.stringify(data, null, 2),
     (err) => {
       if (err) {
@@ -28,25 +28,65 @@ app.post("/config", (req, res) => {
       }
     }
   );
+  console.log("Config saved");
 });
 
-app.post("/run", (req, res) => {
+app.post("/run", (_, res) => {
   console.log("Running executable");
-  exec(
-    path.join(__dirname, "../Release/PrettyPath"),
-    { cwd: "../" },
-    (error, stdout, stderr) => {
-      if (error) {
-        console.error(`exec error: ${error}`);
-        return res.status(500).json({ error: "Failed to run executable" });
+  const child = spawn(path.join(__dirname, "../Release/PrettyPath"), [], {
+    cwd: "../",
+  });
+
+  child.stdout.on("data", (data) => {
+    console.log(`stdout: ${data}`);
+    res.write(data);
+  });
+
+  child.stderr.on("data", (data) => {
+    console.error(`stderr: ${data}`);
+  });
+
+  child.on("error", (error) => {
+    console.error(`error: ${error}`);
+    res.status(500).json({ error: "Failed to run executable" });
+  });
+
+  child.on("close", (code) => {
+    console.log(`child process exited with code ${code}`);
+    res.end();
+  });
+});
+
+app.get("/tarns", (_, res) => {
+  const tarnsPath = path.join(__dirname, "../data/tarns.csv");
+  if (fs.existsSync(tarnsPath)) {
+    fs.readFile(tarnsPath, "utf8", (err, data) => {
+      if (err) {
+        console.error(err);
+        res.status(500).send("Error reading tarns");
+      } else {
+        console.log("Tarns file read");
+        res.send(data);
       }
-      if (stderr) {
-        console.error(`stderr: ${stderr}`);
-      }
-      console.log(`stdout: ${stdout}`);
-      res.json({ message: "Executable ran successfully", output: stdout });
+    });
+  } else {
+    res.status(404).send("Tarns file not found");
+  }
+});
+
+app.post("/tarns", (req, res) => {
+  const tarns = req.body;
+  const tarnsPath = path.join(__dirname, "../data/tarns.json");
+
+  fs.writeFileSync(tarnsPath, JSON.stringify(tarns, null, 2), (err) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send("Error saving config");
+    } else {
+      res.send("Config saved");
     }
-  );
+  });
+  console.log("Tarns saved");
 });
 
 app.listen(port, () => {

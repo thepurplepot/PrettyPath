@@ -34,22 +34,32 @@ int main(int argc, char** argv) {
   Parser parser(Config::c.nodes_filename, Config::c.edges_filename);
   Graph graph;
   MapData map = parser.read_map_data(graph);
-  auto tarns = parser.read_tarn_data(Config::c.tarns_filename);
-  auto filtered_tarns = TarnRouter::filter_tarns(
-      tarns, Config::c.min_tarn_elevation, Config::c.max_tarn_elevation,
-      Config::c.min_tarn_area, Config::c.max_tarn_area, Config::c.min_latitude,
-      Config::c.max_latitude, Config::c.min_longitude, Config::c.max_latitude,
-      Config::c.tarn_blacklist);
-  std::cout << "Filtered tarns:" << std::endl;
-  for (auto tarn : filtered_tarns) {
-    std::cout << "\"" << tarn.name << "\""
-              << " Elevation: " << tarn.elevation << " m Area: " << tarn.area
-              << " m^2" << std::endl;
+  std::pair<std::vector<std::pair<const TarnData, size_t>>,
+            std::vector<const Node*>>
+      path;
+  if (!Config::c.use_ordered_tarns) {
+    auto tarns = parser.read_tarn_data(Config::c.tarns_filename);
+    auto filtered_tarns = TarnRouter::filter_tarns(
+        tarns, Config::c.min_tarn_elevation, Config::c.max_tarn_elevation,
+        Config::c.min_tarn_area, Config::c.max_tarn_area,
+        Config::c.min_latitude, Config::c.max_latitude, Config::c.min_longitude,
+        Config::c.max_latitude, Config::c.tarn_blacklist);
+    std::cout << "Filtered tarns:" << std::endl;
+    for (auto tarn : filtered_tarns) {
+      std::cout << "\"" << tarn.name << "\""
+                << " Elevation: " << tarn.elevation << " m Area: " << tarn.area
+                << " m^2" << std::endl;
+    }
+    std::cout << std::endl;
+    path = TarnRouter::find_shortest_path_between_tarns(
+        graph, filtered_tarns, Config::c.min_path_length,
+        Config::c.start_location);
+  } else {
+    auto tarns = parser.read_ordered_tarn_data(Config::c.tarns_filename);
+    path = TarnRouter::find_shortest_path_between_ordered_tarns(
+        graph, tarns, Config::c.start_location);
   }
-  std::cout << std::endl;
-  auto path = TarnRouter::find_shortest_path_between_tarns(
-      graph, filtered_tarns, Config::c.min_path_length,
-      Config::c.start_location);
+
   auto tarn_path = path.first;
   if (path.first.empty()) {
     std::cout << "No path found" << std::endl;

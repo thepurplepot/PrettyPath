@@ -278,4 +278,26 @@ find_shortest_path_between_tarns(
 
   return path;
 }
+
+std::pair<std::vector<std::pair<const TarnData, size_t>>,
+          std::vector<const Node*>>
+find_shortest_path_between_ordered_tarns(
+    const Graph& graph, std::vector<TarnData>& tarn,
+    const std::pair<double, double>& start_location) {
+  std::pair<std::vector<std::pair<const TarnData, size_t>>,
+            std::vector<const Node*>>
+      result;
+  if (start_location.first != 0 && start_location.second != 0) {
+    tarn.insert(tarn.begin(), TarnData("Start", start_location.first,
+                                       start_location.second, 0, 0, 0));
+  }
+  for (size_t i = 1; i < tarn.size(); i++) {
+    auto path = find_path_between_tarns(graph, tarn[i - 1], tarn[i]);
+    result.first.push_back(std::make_pair(tarn[i - 1], path.second.size()));
+    result.second.insert(result.second.end(), path.second.begin(),
+                         path.second.end());
+  }
+  result.first.push_back(std::make_pair(tarn.back(), 0));
+  return result;
+}
 }  // namespace TarnRouter
