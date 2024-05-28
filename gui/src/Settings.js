@@ -9,6 +9,7 @@ import Actions from "./Actions";
 
 const Settings = ({ reloadGPX, toggleGPX, gpxHidden }) => {
   const { tarnConstraints } = React.useContext(MapContext);
+  const [open, setOpen] = React.useState(true);
 
   return (
     <div className="absolute top-5 right-3 z-50">
@@ -17,34 +18,38 @@ const Settings = ({ reloadGPX, toggleGPX, gpxHidden }) => {
           Settings
         </Dropdown.Toggle>
         <Dropdown.Menu className="bg-transparent border-0"> */}
-          <div className="grid grid-cols-2">
-            <div className="flex flex-col">
-              <Actions
-                reloadGPX={reloadGPX}
-                toggleGPX={toggleGPX}
-                gpxHidden={gpxHidden}
-              />
-            </div>
-            <div className="flex flex-col">
-              <PathCostSliders />
-            </div>
-            <div className="flex flex-col">
+      <div className={open ? "flex" : "flex justify-end"}>
+        {open && (
+          <div className="flex flex-col">
+            <FileNamePicker />
+            <PathCostSliders />
+          </div>
+        )}
+        <div className="flex flex-col">
+          <Actions
+            open={open}
+            setOpen={setOpen}
+            reloadGPX={reloadGPX}
+            toggleGPX={toggleGPX}
+            gpxHidden={gpxHidden}
+          />
+          {open && (
+            <div>
+              {!tarnConstraints.useOrderedTarns && (
+                <div className="flex flex-col">
+                  <PathConstraints />
+                </div>
+              )}
               <TarnConstraints />
             </div>
-            {!tarnConstraints.useOrderedTarns && (
-              <div className="flex flex-col">
-                <PathConstraints />
-              </div>
-            )}
-            <div className="flex flex-col">
-              <FileNamePicker />
-            </div>
-          </div>
-          <div className="flex flex-row py-2">
-            <TarnList />
-            {tarnConstraints.useOrderedTarns && <OrderedTarnList />}
-          </div>
-        {/* </Dropdown.Menu>
+          )}
+        </div>
+      </div>
+      <div className="flex flex-row py-2">
+        <TarnList />
+        {tarnConstraints.useOrderedTarns && <OrderedTarnList />}
+      </div>
+      {/* </Dropdown.Menu>
       </Dropdown> */}
     </div>
   );

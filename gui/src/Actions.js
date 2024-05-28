@@ -2,7 +2,7 @@ import React from "react";
 import { MapContext } from "./MapContext";
 import ControlPanel, { Button, Custom } from "react-control-panel";
 
-function Actions({ toggleGPX, reloadGPX, gpxHidden }) {
+function Actions({ toggleGPX, reloadGPX, gpxHidden, open, setOpen }) {
   const {
     bounds,
     pathWeights,
@@ -148,12 +148,16 @@ function Actions({ toggleGPX, reloadGPX, gpxHidden }) {
     <ControlPanel
       theme="dark"
       title="Actions"
-      // width={500}
-      style={{ marginRight: 30 }}
+      width={500}
+      // style={{ marginRight: 30 }}
       className="bg-opacity-25"
     >
+      <Button
+        label={open ? "Close Settings" : "Open Settings"}
+        action={() => setOpen(!open)}
+      />
       <Button label={gpxHidden ? "Show GPX" : "Hide GPX"} action={toggleGPX} />
-      <Button label="Save" action={save} />
+      {/*<Button label="Save" action={save} />*/}
       <Button label="Run" action={run} />
       <Custom
         Comp={() =>

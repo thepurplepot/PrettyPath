@@ -14,7 +14,7 @@ function PathConstraints() {
         setPathConstraints((prev) => ({ ...prev, ...newState }))
       }
       width={500}
-      style={{ marginRight: 30 }}
+      // style={{ marginRight: 30 }}
       className="bg-opacity-25"
     >
       <Interval label="length" min={0} max={50000} />

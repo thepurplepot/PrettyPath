@@ -205,7 +205,7 @@ function GPXLayer({
                     .setContent(
                       `<p style="color: ${color}; font-size: 16px;">Length: ${length} m</p>`
                     )
-                    .openOn(map);        
+                    .openOn(map);
                 });
               }
               if (sublayer instanceof window.L.Marker) {

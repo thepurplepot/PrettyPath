@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { MapContext } from "./MapContext";
-import ControlPanel, { Checkbox, Custom, Interval, Button } from "react-control-panel";
+import ControlPanel, {
+  Checkbox,
+  Custom,
+  Interval,
+  Button,
+} from "react-control-panel";
 
 function TarnList() {
   const { tarnConstraints, setTarnConstraints, bounds, unorderedTarns } =
@@ -62,7 +67,12 @@ function TarnList() {
           </ul>
         )}
       />
-      <Button label="Reset Blacklist" action={() => setTarnConstraints((prev) => ({...prev, blacklist: []}))} />
+      <Button
+        label="Reset Blacklist"
+        action={() =>
+          setTarnConstraints((prev) => ({ ...prev, blacklist: [] }))
+        }
+      />
     </ControlPanel>
   );
 }
@@ -78,6 +88,19 @@ function OrderedTarnList() {
     setTarns([]);
   };
 
+  const handleDragStart = (e, index) => {
+    e.dataTransfer.setData("draggedItemIndex", index);
+  };
+
+  const handleDrop = (e, index) => {
+    const draggedItemIndex = e.dataTransfer.getData("draggedItemIndex");
+    const items = Array.from(tarns);
+    const [reorderedItem] = items.splice(draggedItemIndex, 1);
+    items.splice(index, 0, reorderedItem);
+
+    setTarns(items);
+  };
+
   return (
     <ControlPanel
       theme="dark"
@@ -87,16 +110,15 @@ function OrderedTarnList() {
       <Custom
         Comp={({ theme }) => (
           <ul className="overflow-auto max-h-96">
-            {tarns.map((tarn) => {
-              const index = tarns.findIndex(
-                (orderedTarn) => orderedTarn.name === tarn.name
-              );
+            {tarns.map((tarn, index) => {
               return (
                 <li
                   key={tarn.name}
-                  onClick={() =>
-                    removeTarn(tarn)
-                  }
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, index)}
+                  onDrop={(e) => handleDrop(e, index)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onClick={() => removeTarn(tarn)}
                   style={{
                     color: tarnConstraints.blacklist.includes(tarn.name)
                       ? "red"
@@ -107,6 +129,13 @@ function OrderedTarnList() {
                 </li>
               );
             })}
+            <li
+              key="placeholder"
+              draggable
+              onDrop={(e) => handleDrop(e, tarns.length)}
+              onDragOver={(e) => e.preventDefault()}
+              style={{ minHeight: 10 }}
+            ></li>
           </ul>
         )}
       />
@@ -127,8 +156,9 @@ function TarnConstraints() {
         setTarnConstraints((prev) => ({ ...prev, [key]: val }))
       }
       width={500}
-      style={{ marginRight: 30 }}
+      // style={{ marginRight: 30 }}
       className="bg-opacity-25"
+      onClick={(e) => console.log(e)}
     >
       <Interval label="elevation" min={0} max={1000} />
       <Interval label="area" min={300} max={100000} scale={"log"} />

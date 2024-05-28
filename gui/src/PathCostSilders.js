@@ -14,7 +14,7 @@ function PathCostSliders() {
         setPathWeights((prev) => ({ ...prev, [key]: val }))
       }
       width={500}
-      style={{ marginRight: 30 }}
+      // style={{ marginRight: 30 }}
       className="bg-opacity-25"
     >
       <Range label="lengthWeight" min={0} max={5} />
