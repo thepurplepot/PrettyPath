@@ -13,8 +13,8 @@ class Parser {
   static std::vector<node_id_t> parse_nodes(
       const std::string& edge_nodes_string);
   static MapData read_map_data(Graph& graph);
-  static std::vector<TarnData> read_tarn_data(const std::string& filename);
-  static std::vector<TarnData> read_ordered_tarn_data(
+  static std::vector<POIData> read_poi_data(const std::string& filename);
+  static std::vector<POIData> read_ordered_poi_data(
       const std::string& filename);
   static std::vector<std::pair<const long, const Node*>> path_to_node_list(
       const MapData& map_data, const Graph& graph,
@@ -36,9 +36,9 @@ class Parser {
   //       double, const double>>&
   //           tarn_nodes,
   //       const std::string& filename);
-  static void write_tarn_paths(
+  static void write_paths(
       const MapData& map_data, const Graph& graph,
-      const std::pair<std::vector<std::pair<const TarnData, size_t>>,
+      const std::pair<std::vector<std::pair<const POIData, size_t>>,
                       std::vector<const Node*>>& tarns_path,
       const std::string& file_dir, const std::string& gpx_filename);
   static void clean_map_data(MapData& map_data);

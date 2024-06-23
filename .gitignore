@@ -19,3 +19,4 @@ data/markers/*
 path.svg
 log.txt
 data/tarns.json
+.cache/

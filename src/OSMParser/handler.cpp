@@ -5,6 +5,7 @@ osmparser::Handler::~Handler() {
   write_nodes_file();
   write_edges_file();
   write_tarns_file();
+  write_peaks_file();
   std::cout << "Map bounds: " << m_map_min_lat << " -> " << m_map_max_lat
             << ", " << m_map_min_lon << " -> " << m_map_max_lon << std::endl;
   std::cout << "Cleaning up..." << std::endl;
@@ -14,11 +15,20 @@ osmparser::Handler::~Handler() {
   m_nodes_file.close();
   m_tarns_file.flush();
   m_tarns_file.close();
+  m_peaks_file.flush();
+  m_peaks_file.close();
 }
 
 void osmparser::Handler::node(const osmium::Node& node) {
   const osmium::Location location = node.location();
   const float elevation = get_elevation(location.lat(), location.lon());
+  const auto& tags = node.tags();
+  if (tags.has_key("natural") &&
+      std::strcmp(tags.get_value_by_key("natural"), "peak") == 0) {
+    const std::string name =
+        tags.has_key("name") ? tags.get_value_by_key("name") : "Unknown";
+    m_peaks[node.id()] = PeakData(name, location, elevation);
+  }
   m_nodes[node.id()] = NodeData(location, 0, elevation);
 }
 
@@ -28,7 +38,7 @@ void osmparser::Handler::way(const osmium::Way& way) {
   std::string tarn_name = is_tarn(way.tags());
   const bool walkable = is_walkable(way.tags());
 
-  if (!tarn_name.empty() && walkable) {  // TODO debug
+  if (!tarn_name.empty() && walkable) {
     std::cout << "ERROR: Tarn is walkable\n";
     for (const auto& tag : way.tags()) {
       std::cout << "Tag: " << tag.key() << " = " << tag.value() << std::endl;
@@ -137,32 +147,27 @@ float osmparser::Handler::get_elevation(const double latitude,
   return 0;
 }
 
-// TODO: fix
 std::string osmparser::Handler::is_tarn(const osmium::TagList& tags) {
   const char* natural = tags["natural"];
-  if (natural) {
-    if (std::strcmp(natural, "water") == 0) {
-      const char* water = tags["water"];
-      if (water) {
-        if (std::strcmp(water, "river") != 0 &&
-            std::strcmp(water, "stream") != 0) {
-          const char* name = tags["name"];
-          if (name) {
-            return name;
-          }
-        }
-      } else {
-        const char* name = tags["name"];
-        if (name) {
-          return name;
-        }
+  if (!natural || std::strcmp(natural, "water") != 0) return std::string();
+
+  const char* water = tags["water"];
+  if (water) {
+    if (std::strcmp(water, "river") != 0 && std::strcmp(water, "stream") != 0) {
+      const char* name = tags["name"];
+      if (name) {
+        return name;
       }
+    }
+  } else {
+    const char* name = tags["name"];
+    if (name) {
+      return name;
     }
   }
   return std::string();
 }
 
-//TODO: fix (rivers, boundaries are being set as walkable)
 bool osmparser::Handler::is_walkable(const osmium::TagList& tags) {
   const char* foot = tags["foot"];
   if (foot) {
@@ -179,18 +184,7 @@ bool osmparser::Handler::is_walkable(const osmium::TagList& tags) {
       return false;
   }
 
-  const char* natural = tags["natural"];
-  if (natural) {
-    if (std::strcmp(natural, "water") == 0) return false;
-  }
-
-  const char* water = tags["water"];
-  if (water) {
-    if (std::strcmp(water, "river") == 0 ||
-        std::strcmp(water, "stream") == 0) {
-      return false;
-    }
-  }
+  if (!highway && !foot) return false;
 
   return true;
 }
@@ -391,4 +385,19 @@ void osmparser::Handler::write_tarns_file() {
                  << "," << std::round(area) << "\n";
   }
   std::cout << "Tarns: " << m_tarn_counter << std::endl;
+}
+
+void osmparser::Handler::write_peaks_file() {
+  std::cout << "Writing peaks..." << std::endl;
+  m_peaks_file << "osm_id,name,lat,lon,elevation\n";
+  m_peaks_file << std::fixed << std::setprecision(6);
+  for (const auto& peak_pair : m_peaks) {
+    const osmium::object_id_type peak_id = peak_pair.first;
+    const PeakData& peak_data = peak_pair.second;
+    m_peak_counter++;
+    m_peaks_file << peak_id << ",\"" << peak_data.name << "\","
+                 << peak_data.location.lat() << "," << peak_data.location.lon()
+                 << "," << peak_data.elevation << "\n";
+  }
+  std::cout << "Peaks: " << m_peak_counter << std::endl;
 }

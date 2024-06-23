@@ -107,11 +107,10 @@ class Graph {
   graph_t m_graph;
 };
 
-struct TarnData {
-  TarnData()
-      : name(""), latitude(0), longitude(0), osm_id(0), elevation(0), area(0) {}
-  TarnData(std::string name, double latitude, double longitude, long osm_id,
-           float elevation, unsigned long area)
+struct POIData {
+  POIData() : name(""), latitude(0), longitude(0), osm_id(0), elevation(0) {}
+  POIData(std::string name, double latitude, double longitude, long osm_id,
+          float elevation, unsigned long area = 0)
       : name(name),
         latitude(latitude),
         longitude(longitude),
@@ -128,6 +127,6 @@ struct TarnData {
   double latitude, longitude;
   long osm_id;
   float elevation;
-  unsigned long area;
   const Node* best_node = nullptr;
+  unsigned long area; // Only for tarns
 };

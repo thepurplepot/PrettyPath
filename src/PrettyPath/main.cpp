@@ -3,7 +3,7 @@
 #include "graph.hh"
 #include "parser.hh"
 #include "pathfinder.hh"
-#include "tarnrouter.hh"
+#include "poirouter.hh"
 
 void handle_option(int argc, char** argv, std::string& config_filename) {
   int opt;
@@ -34,11 +34,11 @@ int main(int argc, char** argv) {
   Parser parser(Config::c.nodes_filename, Config::c.edges_filename);
   Graph graph;
   MapData map = parser.read_map_data(graph);
-  std::pair<std::vector<std::pair<const TarnData, size_t>>,
+  std::pair<std::vector<std::pair<const POIData, size_t>>,
             std::vector<const Node*>>
       path;
   if (!Config::c.use_ordered_tarns) {
-    auto tarns = parser.read_tarn_data(Config::c.tarns_filename);
+    auto tarns = parser.read_poi_data(Config::c.tarns_filename);
     auto filtered_tarns = TarnRouter::filter_tarns(
         tarns, Config::c.min_tarn_elevation, Config::c.max_tarn_elevation,
         Config::c.min_tarn_area, Config::c.max_tarn_area,
@@ -53,9 +53,9 @@ int main(int argc, char** argv) {
     std::cout << std::endl;
     path = TarnRouter::find_shortest_path_between_tarns(
         graph, filtered_tarns, Config::c.min_path_length,
-        Config::c.start_location);
+        Config::c.max_path_length, Config::c.start_location);
   } else {
-    auto tarns = parser.read_ordered_tarn_data(Config::c.tarns_filename);
+    auto tarns = parser.read_ordered_poi_data(Config::c.tarns_filename);
     path = TarnRouter::find_shortest_path_between_ordered_tarns(
         graph, tarns, Config::c.start_location);
   }
@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
       std::cout << tarn.name << " at (" << tarn.latitude << ", "
                 << tarn.longitude << ")" << std::endl;
     }
-    parser.write_tarn_paths(map, graph, path, Config::c.output_dir,
+    parser.write_paths(map, graph, path, Config::c.output_dir,
                             Config::c.gpx_filename);
   }
   parser.clean_map_data(map);

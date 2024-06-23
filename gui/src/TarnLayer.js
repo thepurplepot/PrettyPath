@@ -1,56 +1,70 @@
-import { useEffect } from "react";
+import { useEffect, useContext, useState } from "react";
 import { Marker, Popup } from "react-leaflet";
+import { MapContext } from "./MapContext";
 import Papa from "papaparse";
 
-function TarnLayer({
-  tarns,
-  setTarns,
-  orderedTarns,
-  setOrderedTarns,
-  constraints,
-}) {
+function TarnLayer() {
+  const {
+    tarnConstraints,
+    setUnorderedTarns,
+    unorderedTarns,
+    tarns,
+    setTarns,
+    fileNames,
+  } = useContext(MapContext);
+  const [data, setData] = useState([]);
+
   const orderTarn = (tarn) => {
-    if (orderedTarns.find((orderedTarn) => orderedTarn.name === tarn.name)) {
+    if (tarns.find((orderedTarn) => orderedTarn.name === tarn.name)) {
       return;
     }
-    setOrderedTarns((prev) => [...prev, tarn]);
+    setTarns((prev) => [...prev, tarn]);
   };
 
   useEffect(() => {
-    fetch("http://localhost:3001/tarns")
+    fetch(
+      `http://localhost:3001/pois?file=${encodeURIComponent(
+        fileNames.map_tarns
+      )}`
+    )
       .then((response) => response.text())
       .then((csv) => {
         const { data } = Papa.parse(csv, { header: true, dynamicTyping: true });
-        setTarns(
-          data
-            .filter(
-              (row) =>
-                row.lat &&
-                row.lon &&
-                row.name &&
-                row.area &&
-                row.elevation &&
-                (!constraints.area[0] || row.area >= constraints.area[0]) &&
-                (!constraints.area[1] || row.area <= constraints.area[1]) &&
-                (!constraints.elevation[0] ||
-                  row.elevation >= constraints.elevation[0]) &&
-                (!constraints.elevation[1] ||
-                  row.elevation <= constraints.elevation[1]) //&&
-              // (!constraints.blacklist ||
-              //   !constraints.blacklist.includes(row.name))
-            )
-            .map((row) => ({
-              position: [row.lat, row.lon],
-              name: row.name,
-              area: row.area,
-              elevation: row.elevation,
-            }))
-        );
+        setData(data);
       })
       .catch((error) => console.error("Error:", error));
-  }, [constraints, setTarns]);
+  }, [fileNames.map_tarns, setData]);
 
-  return tarns.map((tarn, index) => (
+  useEffect(() => {
+    const filteredData = data
+      .filter((row) => {
+        var valid =
+          row.lat &&
+          row.lon &&
+          row.name &&
+          row.elevation &&
+          (!tarnConstraints.elevation[0] ||
+            row.elevation >= tarnConstraints.elevation[0]) &&
+          (!tarnConstraints.elevation[1] ||
+            row.elevation <= tarnConstraints.elevation[1]);
+        if (row.area) {
+          valid =
+            valid &&
+            (!tarnConstraints.area[0] || row.area >= tarnConstraints.area[0]) &&
+            (!tarnConstraints.area[1] || row.area <= tarnConstraints.area[1]);
+        }
+        return valid;
+      })
+      .map((row) => ({
+        position: [row.lat, row.lon],
+        name: row.name,
+        area: row.area,
+        elevation: row.elevation,
+      }));
+    setUnorderedTarns(filteredData);
+  }, [data, tarnConstraints, setUnorderedTarns]);
+
+  return unorderedTarns.map((tarn, index) => (
     <Marker
       key={index}
       position={tarn.position}
@@ -58,13 +72,13 @@ function TarnLayer({
       icon={window.L.AwesomeMarkers.icon({
         icon: "flag",
         prefix: "fa",
-        markerColor: constraints.blacklist.includes(tarn.name)
+        markerColor: tarnConstraints.blacklist.includes(tarn.name)
           ? "black"
           : "orange",
       })}
       eventHandlers={{
         click: () => {
-          if (constraints.useOrderedTarns) {
+          if (tarnConstraints.useOrderedTarns) {
             orderTarn(tarn);
           }
         },
@@ -74,7 +88,8 @@ function TarnLayer({
         <div>
           <h3 className="text-base font-bold">{tarn.name}</h3>
           <p className="text-sm">
-            Area: {tarn.area} m, Elevation: {tarn.elevation} m²
+            {tarn.area && `Area: ${tarn.area} m², `}
+            Elevation: {tarn.elevation} m
           </p>
         </div>
       </Popup>

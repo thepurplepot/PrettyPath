@@ -70,18 +70,18 @@ function Actions({ toggleGPX, reloadGPX, gpxHidden, open, setOpen }) {
       },
       body: JSON.stringify(config),
     })
-      .then((response) => response.json())
       .then((data) => console.log(data))
       .catch((error) => console.error("Error:", error));
   };
 
-  const sendTarns = () => {
-    fetch("http://localhost:3001/tarns", {
+  const sendTarns = async () => {
+    await fetch("http://localhost:3001/tarns", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(
+        //TODO: dont always filter orderd tarns by bounds
         tarns.filter((tarn) => bounds.contains(tarn.position))
       ),
     })
@@ -93,16 +93,16 @@ function Actions({ toggleGPX, reloadGPX, gpxHidden, open, setOpen }) {
       .catch((error) => console.error("Error:", error));
   };
 
-  const save = () => {
-    saveConfig();
+  const save = async () => {
+    await saveConfig();
     if (tarnConstraints.useOrderedTarns) {
-      sendTarns();
+      await sendTarns();
     }
   };
 
   const run = async () => {
     setProgress(1);
-    save();
+    await save();
     try {
       const response = await fetch("http://localhost:3001/run", {
         method: "POST",

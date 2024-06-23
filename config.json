@@ -13,10 +13,10 @@
     "cars_weight": 10
   },
   "map_constraints": {
-    "min_latitude": 54.39734979806855,
-    "max_latitude": 54.554544410585606,
-    "min_longitude": -3.2890319824218754,
-    "max_longitude": -2.7699279785156254
+    "min_latitude": 54.423124794218964,
+    "max_latitude": 54.46245535267014,
+    "min_longitude": -3.13436508178711,
+    "max_longitude": -3.0045890808105473
   },
   "path_constraints": {
     "max_length": 10000,
@@ -25,8 +25,8 @@
     "max_difficulty": 3,
     "max_cars": 4,
     "start_location": {
-      "latitude": 54.422426,
-      "longitude": -3.012657
+      "latitude": 54.446089,
+      "longitude": -3.091965
     }
   },
   "tarn_constraints": {

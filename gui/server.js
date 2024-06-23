@@ -8,7 +8,6 @@ const app = express();
 const port = 3001;
 const exePath = path.join(__dirname, "../Release/PrettyPath");
 const configPath = path.join(__dirname, "../config.json");
-const tarnsPath = path.join(__dirname, "../data/tarns.csv");
 const tarnsJSONPath = path.join(__dirname, "../data/tarns.json");
 
 app.use(cors());
@@ -26,12 +25,10 @@ app.post("/config", (req, res) => {
       if (err) {
         console.error(err);
         res.status(500).send("Error saving config");
-      } else {
-        console.log("Config saved");
-        res.send("Config saved");
       }
     }
   );
+  res.send("Config saved");
   console.log("Config saved");
 });
 
@@ -61,19 +58,21 @@ app.post("/run", (_, res) => {
   });
 });
 
-app.get("/tarns", (_, res) => {
-  if (fs.existsSync(tarnsPath)) {
-    fs.readFile(tarnsPath, "utf8", (err, data) => {
+app.get("/pois", (req, res) => {
+  const fileName = req.query.file;
+  const filePath = path.join(__dirname, `../${fileName}`);
+  if (fs.existsSync(filePath)) {
+    fs.readFile(filePath, "utf8", (err, data) => {
       if (err) {
         console.error(err);
-        res.status(500).send("Error reading tarns");
+        res.status(500).send("Error reading POIs");
       } else {
-        console.log("Tarns file read");
+        console.log("POI file read");
         res.send(data);
       }
     });
   } else {
-    res.status(404).send("Tarns file not found");
+    res.status(404).send("POI file not found");
   }
 });
 
@@ -84,10 +83,9 @@ app.post("/tarns", (req, res) => {
     if (err) {
       console.error(err);
       res.status(500).send("Error saving config");
-    } else {
-      res.send("Config saved");
     }
   });
+  res.send("Tarns saved");
   console.log("Tarns saved");
 });
 

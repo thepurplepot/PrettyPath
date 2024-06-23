@@ -19,11 +19,13 @@ const struct {
 class Handler : public osmium::handler::Handler {
  public:
   Handler(std::string data_filename, std::string edges_filename,
-          std::string nodes_filename, std::string tarns_filename)
+          std::string nodes_filename, std::string tarns_filename,
+          std::string peaks_filename)
       : m_elevation_filename(data_filename),
         m_edges_file(edges_filename),
         m_nodes_file(nodes_filename),
-        m_tarns_file(tarns_filename) {
+        m_tarns_file(tarns_filename),
+        m_peaks_file(peaks_filename) {
     std::cout << "Reading elevation data..." << std::endl;
     read_elevation_data();
     std::cout << "Reading OSM data...\n";
@@ -43,6 +45,7 @@ class Handler : public osmium::handler::Handler {
   void write_nodes_file();
   void write_edges_file();
   void write_tarns_file();
+  void write_peaks_file();
   std::pair<osmium::Location, double> get_tarn_location_and_area(
       const std::vector<osmium::object_id_type>& nodes);
   std::pair<const double, const double> latlon_to_utm(const double lat,
@@ -80,6 +83,14 @@ class Handler : public osmium::handler::Handler {
     std::string name;
     std::vector<osmium::object_id_type> nodes;
   };
+  struct PeakData {
+    PeakData() : name(""), location(osmium::Location()), elevation(0) {}
+    PeakData(std::string name, osmium::Location location, float elevation)
+        : name(name), location(location), elevation(elevation) {}
+    std::string name;
+    osmium::Location location;
+    float elevation;
+  };
 
  private:
   std::string m_elevation_filename;
@@ -87,14 +98,17 @@ class Handler : public osmium::handler::Handler {
   std::ofstream m_edges_file;
   std::ofstream m_nodes_file;
   std::ofstream m_tarns_file;
+  std::ofstream m_peaks_file;
   std::unordered_map<osmium::object_id_type, NodeData> m_nodes;
   long m_node_counter = 0;
   std::unordered_map<osmium::object_id_type, TarnData> m_tarns;
+  std::unordered_map<osmium::object_id_type, PeakData> m_peaks;
   std::unordered_map<std::string, std::vector<osmium::object_id_type>>
       m_tarn_names;
   std::unordered_map<osmium::object_id_type, WayData> m_ways;
   long m_edge_counter = 0;
   long m_tarn_counter = 0;
+  long m_peak_counter = 0;
   double m_ele_min_lon, m_map_min_lon;
   double m_ele_max_lon, m_map_max_lon;
   double m_ele_min_lat, m_map_min_lat;

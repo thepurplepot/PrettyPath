@@ -146,18 +146,18 @@ MapData Parser::read_map_data(Graph& graph) {
   return map_data;
 }
 
-std::vector<TarnData> Parser::read_tarn_data(const std::string& filename) {
-  std::vector<TarnData> tarn_data;
+std::vector<POIData> Parser::read_poi_data(const std::string& filename) {
+  std::vector<POIData> poi_data;
 
-  std::ifstream tarns_file(filename);
-  if (!tarns_file.is_open()) {
+  std::ifstream poi_file(filename);
+  if (!poi_file.is_open()) {
     std::cerr << "Error: Could not open file " << filename << std::endl;
-    return tarn_data;
+    return poi_data;
   }
 
   std::string line;
-  std::getline(tarns_file, line);  // Skip the header
-  while (std::getline(tarns_file, line)) {
+  std::getline(poi_file, line);  // Skip the header
+  while (std::getline(poi_file, line)) {
     std::stringstream ss(line);
     std::string field;
 
@@ -183,45 +183,55 @@ std::vector<TarnData> Parser::read_tarn_data(const std::string& filename) {
     std::getline(ss, field, ',');
     float elevation = std::stof(field);
 
-    // Get the area
+    if (ss.eof()) {
+      poi_data.push_back(POIData(name, latitude, longitude, osm_id, elevation));
+      continue;
+    }
+
+    // Get the area (if available)
     std::getline(ss, field);
     unsigned long area = std::stoul(field);
 
-    tarn_data.push_back(
-        TarnData(name, latitude, longitude, osm_id, elevation, area));
+    poi_data.push_back(
+        POIData(name, latitude, longitude, osm_id, elevation, area));
   }
 
-  tarns_file.close();
+  poi_file.close();
 
-  return tarn_data;
+  return poi_data;
 }
 
-std::vector<TarnData> Parser::read_ordered_tarn_data(const std::string& filename) {
-  std::vector<TarnData> tarn_data;
+std::vector<POIData> Parser::read_ordered_poi_data(
+    const std::string& filename) {
+  std::vector<POIData> poi_data;
 
-  std::ifstream tarns_file(filename);
-  if (!tarns_file.is_open()) {
+  std::ifstream poi_file(filename);
+  if (!poi_file.is_open()) {
     std::cerr << "Error: Could not open file " << filename << std::endl;
-    return tarn_data;
+    return poi_data;
   }
 
-  nlohmann::json tarns;
-  tarns_file >> tarns;
+  nlohmann::json pois;
+  poi_file >> pois;
 
-  for (const auto& tarn : tarns) {
-    std::string name = tarn["name"];
-    double latitude = tarn["position"][0];
-    double longitude = tarn["position"][1];
+  for (const auto& poi : pois) {
+    std::string name = poi["name"];
+    double latitude = poi["position"][0];
+    double longitude = poi["position"][1];
     long osm_id = 0;
-    float elevation = tarn["elevation"];
-    unsigned long area = tarn["area"];
-    tarn_data.push_back(TarnData(name, latitude, longitude, osm_id, elevation,
-                                 area));
+    float elevation = poi["elevation"];
+    if (poi.contains("area")) {
+      unsigned long area = poi["area"];
+      poi_data.push_back(
+          POIData(name, latitude, longitude, osm_id, elevation, area));
+    } else {
+      poi_data.push_back(POIData(name, latitude, longitude, osm_id, elevation));
+    }
   }
 
-  tarns_file.close();
+  poi_file.close();
 
-  return tarn_data;
+  return poi_data;
 }
 
 std::vector<std::pair<const long, const Node*>> Parser::path_to_node_list(
@@ -363,13 +373,13 @@ void Parser::write_gpx_footer(std::ofstream& file) {
   file.close();
 }
 
-void Parser::write_tarn_paths(
+void Parser::write_paths(
     const MapData& map_data, const Graph& graph,
-    const std::pair<std::vector<std::pair<const TarnData, size_t>>,
-                    std::vector<const Node*>>& tarns_path,
+    const std::pair<std::vector<std::pair<const POIData, size_t>>,
+                    std::vector<const Node*>>& poi_path,
     const std::string& file_dir, const std::string& gpx_filename) {
-  auto tarns = tarns_path.first;
-  auto path = tarns_path.second;
+  auto pois = poi_path.first;
+  auto path = poi_path.second;
   size_t path_start = 0;
   size_t edges_written = 0;
 
@@ -379,31 +389,31 @@ void Parser::write_tarn_paths(
 
   std::ofstream gpx = write_gpx_header(file_dir + gpx_filename);
 
-  for (size_t i = 0; i < tarns.size() - 1; i++) {
-    auto path_length = tarns[i].second;
+  for (size_t i = 0; i < pois.size() - 1; i++) {
+    auto path_length = pois[i].second;
     edges_written += path_length;
-    auto start_tarn = tarns[i].first;
-    auto end_tarn = tarns[(i + 1) % tarns.size()].first;
-    std::cout << "Writing path from " << start_tarn.name << " to "
-              << end_tarn.name << " with " << path_length << " edges"
+    auto start_poi = pois[i].first;
+    auto end_poi = pois[(i + 1) % pois.size()].first;
+    std::cout << "Writing path from " << start_poi.name << " to "
+              << end_poi.name << " with " << path_length << " edges"
               << std::endl;
-    std::string name = start_tarn.name_without_spaces() + "_to_" +
-                       end_tarn.name_without_spaces();
+    std::string name = start_poi.name_without_spaces() + "_to_" +
+                       end_poi.name_without_spaces();
     std::string filename = file_dir + name + ".csv";
     std::vector<const Node*> sub_path(path.begin() + path_start,
                                       path.begin() + path_start + path_length);
     path_start += path_length;
     auto node_list = path_to_node_list(map_data, graph, sub_path);
 
-    write_gpx_waypoint(gpx, start_tarn.name, start_tarn.latitude,
-                       start_tarn.longitude, start_tarn.elevation);
+    write_gpx_waypoint(gpx, start_poi.name, start_poi.latitude,
+                       start_poi.longitude, start_poi.elevation);
 
     write_gpx_track_segment(gpx, name, node_list);
     write_path_to_py(node_list, filename);
   }
-  write_gpx_waypoint(gpx, tarns.back().first.name, tarns.back().first.latitude,
-                     tarns.back().first.longitude,
-                     tarns.back().first.elevation);
+  write_gpx_waypoint(gpx, pois.back().first.name, pois.back().first.latitude,
+                     pois.back().first.longitude,
+                     pois.back().first.elevation);
   write_gpx_footer(gpx);
 }
 

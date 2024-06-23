@@ -302,6 +302,7 @@ export default function GPXMap({ gpxUrl }) {
           setPathConstraints,
           setTarns,
           tarns,
+          setUnorderedTarns,
           unorderedTarns,
           fileNames,
           setFileNames,
@@ -329,13 +330,7 @@ export default function GPXMap({ gpxUrl }) {
             setGpxLoaded={setGpxLoaded}
             setStartLocation={setStartLocation}
           />
-          <TarnLayer
-            tarns={unorderedTarns}
-            setTarns={setUnorderedTarns}
-            orderedTarns={tarns}
-            setOrderedTarns={setTarns}
-            constraints={tarnConstraints}
-          />
+          <TarnLayer />
           <DraggableMarker
             position={startLocation}
             setPosition={setStartLocation}
