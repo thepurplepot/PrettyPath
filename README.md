@@ -42,7 +42,7 @@ plot_path.py can be used to visulise the path.
 
  - Fix TSP routing
  - Add min/max distance constraints to TSP routing
- - Add heightmap data to GUI (better display of path lengths, elevation gain/loss)
+ - Add heightmap data to GUI (better display of path lengths, elevation gain/loss) Use React graph
  - Expand routing from tarns to points of interest (e.g. peaks)
  - Add setting to route back to start
 

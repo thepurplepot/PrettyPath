@@ -31,10 +31,10 @@ struct config_t {
   int max_cars;
   std::pair<double, double> start_location;
   // Map Constraints
-  float min_latitude;
-  float max_latitude;
-  float min_longitude;
-  float max_longitude;
+  double min_latitude;
+  double max_latitude;
+  double min_longitude;
+  double max_longitude;
 };
 
 extern config_t c;

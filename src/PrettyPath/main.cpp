@@ -43,10 +43,11 @@ int main(int argc, char** argv) {
         tarns, Config::c.min_tarn_elevation, Config::c.max_tarn_elevation,
         Config::c.min_tarn_area, Config::c.max_tarn_area,
         Config::c.min_latitude, Config::c.max_latitude, Config::c.min_longitude,
-        Config::c.max_latitude, Config::c.tarn_blacklist);
+        Config::c.max_longitude, Config::c.tarn_blacklist);
     std::cout << "Filtered tarns:" << std::endl;
     for (auto tarn : filtered_tarns) {
       std::cout << "\"" << tarn.name << "\""
+                << " at (" << tarn.latitude << ", " << tarn.longitude << ")"
                 << " Elevation: " << tarn.elevation << " m Area: " << tarn.area
                 << " m^2" << std::endl;
     }
@@ -73,7 +74,7 @@ int main(int argc, char** argv) {
                 << tarn.longitude << ")" << std::endl;
     }
     parser.write_paths(map, graph, path, Config::c.output_dir,
-                            Config::c.gpx_filename);
+                       Config::c.gpx_filename);
   }
   parser.clean_map_data(map);
 }

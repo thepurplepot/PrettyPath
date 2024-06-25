@@ -2,7 +2,7 @@
   "filenames": {
     "map_nodes": "data/nodes.csv",
     "map_edges": "data/edges.csv",
-    "map_tarns": "data/tarns.json",
+    "map_tarns": "data/tarns.csv",
     "output_dir": "data/path/",
     "gpx": "full_path.gpx"
   },
@@ -13,10 +13,10 @@
     "cars_weight": 10
   },
   "map_constraints": {
-    "min_latitude": 54.423124794218964,
-    "max_latitude": 54.46245535267014,
-    "min_longitude": -3.13436508178711,
-    "max_longitude": -3.0045890808105473
+    "min_latitude": 54.37470839172388,
+    "max_latitude": 54.45013118322914,
+    "min_longitude": -3.4491062164306645,
+    "max_longitude": -3.1909275054931645
   },
   "path_constraints": {
     "max_length": 10000,
@@ -25,11 +25,15 @@
     "max_difficulty": 3,
     "max_cars": 4,
     "start_location": {
-      "latitude": 54.446089,
-      "longitude": -3.091965
+      "latitude": 54.412038,
+      "longitude": -3.280277
     }
   },
   "tarn_constraints": {
-    "use_ordered_tarns": true
+    "min_elevation": 0,
+    "max_elevation": 1000,
+    "min_area": 300,
+    "max_area": 10000,
+    "blacklist": []
   }
 }

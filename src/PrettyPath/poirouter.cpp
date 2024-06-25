@@ -69,6 +69,9 @@ std::vector<POIData> filter_tarns(
     const double min_longitude, const double max_longitude,
     const std::vector<std::string>& blacklist) {
   std::vector<POIData> filtered_tarns;
+  std::cout << "Max Longitude: " << max_longitude << " Min Longitude: "
+            << min_longitude << " Max Latitude: " << max_latitude
+            << " Min Latitude: " << min_latitude << std::endl;
 
   std::copy_if(
       tarns.begin(), tarns.end(), std::back_inserter(filtered_tarns),
@@ -318,12 +321,12 @@ void print_table(const std::vector<double>& table,
 }
 
 std::vector<int> fliter_tarns_on_max_dist(std::vector<double>& dist, size_t& n,
-                                             const double max_dist) {
+                                          const double max_dist) {
   std::vector<int> removed_tarns_index;
   const int threshold = 2;
   for (int i = 1; i < n; i++) {
     int under_max_dist = 0;
-    for(int j = 0; j < n; j++) {
+    for (int j = 0; j < n; j++) {
       if (i == j) {
         continue;
       }
@@ -345,14 +348,17 @@ std::vector<int> fliter_tarns_on_max_dist(std::vector<double>& dist, size_t& n,
   n -= removed_tarns_index.size();
   dist.erase(std::remove_if(dist.begin(), dist.end(),
                             [max_dist](double distance) {
-                              return distance == std::numeric_limits<double>::max();
+                              return distance ==
+                                     std::numeric_limits<double>::max();
                             }),
              dist.end());
   return removed_tarns_index;
 }
 
-void renormalise_index_list(std::vector<int>& index_list, std::vector<int>& removed_tarns_index) {
-  std::sort(removed_tarns_index.begin(), removed_tarns_index.end(), std::less<int>());
+void renormalise_index_list(std::vector<int>& index_list,
+                            std::vector<int>& removed_tarns_index) {
+  std::sort(removed_tarns_index.begin(), removed_tarns_index.end(),
+            std::less<int>());
   for (int removed_index : removed_tarns_index) {
     for (int& index : index_list) {
       if (index >= removed_index) {
@@ -392,13 +398,13 @@ find_shortest_path_between_tarns(
     const double max_dist, const std::pair<double, double>& start_location) {
   if (start_location.first != 0 && start_location.second != 0) {
     tarns.insert(tarns.begin(), POIData("Start", start_location.first,
-                                         start_location.second, 0, 0, 0));
+                                        start_location.second, 0, 0, 0));
   }
   size_t n = tarns.size();
   auto paths_table = find_distances_between_tarns(graph, tarns);
   std::vector<double> dist = paths_table.first;
   auto removed_tarns_index = fliter_tarns_on_max_dist(dist, n, max_dist);
-  if(removed_tarns_index.size() > 0) {
+  if (removed_tarns_index.size() > 0) {
     std::cout << "Removed tarns: ";
     for (int index : removed_tarns_index) {
       std::cout << tarns[index].name << ", ";
@@ -408,19 +414,19 @@ find_shortest_path_between_tarns(
   std::unordered_map<int, std::vector<const Node*>> paths = paths_table.second;
 
   auto index_path = route_unordered_tarns(dist, n, min_dist, max_dist);
-  auto tsp_path = route_unordered_tarns_exact(dist, n);
+  // auto tsp_path = route_unordered_tarns_exact(dist, n);
   renormalise_index_list(index_path, removed_tarns_index);
-  renormalise_index_list(tsp_path, removed_tarns_index);
+  // renormalise_index_list(tsp_path, removed_tarns_index);
   std::cout << "Index path: ";
   for (int i = 0; i < index_path.size(); i++) {
     std::cout << index_path[i] << " ";
   }
   std::cout << std::endl;
-  std::cout << "TSP path: ";
-  for (int i = 0; i < tsp_path.size(); i++) {
-    std::cout << tsp_path[i] << " ";
-  }
-  std::cout << std::endl;
+  // std::cout << "TSP path: ";
+  // for (int i = 0; i < tsp_path.size(); i++) {
+  //   std::cout << tsp_path[i] << " ";
+  // }
+  // std::cout << std::endl;
 
   auto path = reconstruct_path(tarns, paths, tarns.size(), index_path);
   // auto path = reconstruct_path(tarns, paths, n, tsp_path);
@@ -438,14 +444,15 @@ find_shortest_path_between_ordered_tarns(
       result;
   if (start_location.first != 0 && start_location.second != 0) {
     tarn.insert(tarn.begin(), POIData("Start", start_location.first,
-                                       start_location.second, 0, 0, 0));
+                                      start_location.second, 0, 0, 0));
   }
 
   const size_t total = tarn.size() - 1;
   size_t done = 0;
 
   for (size_t i = 1; i <= tarn.size(); i++) {
-    auto path = find_path_between_tarns(graph, tarn[i - 1], tarn[i%tarn.size()]);
+    auto path =
+        find_path_between_tarns(graph, tarn[i - 1], tarn[i % tarn.size()]);
     if (path.first == 0) {
       std::cerr << "Error: No path found between tarns: " << tarn[i - 1].name
                 << " and " << tarn[i].name << std::endl;
