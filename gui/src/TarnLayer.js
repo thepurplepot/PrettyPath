@@ -1,4 +1,4 @@
-import { useEffect, useContext, useState } from "react";
+import React, { useEffect, useContext, useState } from "react";
 import { Marker, Popup } from "react-leaflet";
 import { MapContext } from "./MapContext";
 import Papa from "papaparse";

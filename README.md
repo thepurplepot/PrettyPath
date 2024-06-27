@@ -31,20 +31,26 @@ Run OSMParser to generate nodes.csv and edges.csv files contaning routing inform
 ./OSMParser <OSMData.pbf> <topography.tif>
 ```
 
-Run Pathfinding with -s, -g flags for start and goal latitudes/longitudes to find the best path, outputed to path.csv.
+Run Pathfinding with -c flag to specify a config file.
 ```bash
-./PrettyPath -s<latitude,longitude> -g<latitude,longitude>
+./PrettyPath -c<config_file>
 ```
 
 plot_path.py can be used to visulise the path.
 
+### GUI
+The project contains a webapp GUI built using React.
+To begin the backend server and frontend GUI run:
+```bash
+cd gui/
+npm start
+```
+
+
 ### Todos
 
- - Fix TSP routing
- - Add min/max distance constraints to TSP routing
- - Add heightmap data to GUI (better display of path lengths, elevation gain/loss) Use React graph
- - Expand routing from tarns to points of interest (e.g. peaks)
  - Add setting to route back to start
+ - Rename tarns to POI in cpp
 
 License
 ----

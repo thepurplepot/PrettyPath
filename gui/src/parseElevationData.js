@@ -1,5 +1,5 @@
 const haversine = (lat1, lon1, lat2, lon2) => {
-    const R = 6371e3; // metres
+    const R = 6371; // km
     const φ1 = (lat1 * Math.PI) / 180; // φ, λ in radians
     const φ2 = (lat2 * Math.PI) / 180;
     const Δφ = ((lat2 - lat1) * Math.PI) / 180;
@@ -10,7 +10,7 @@ const haversine = (lat1, lon1, lat2, lon2) => {
         Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-    return R * c; // in metres
+    return R * c; // in km
 }
 
 
@@ -18,6 +18,7 @@ const haversine = (lat1, lon1, lat2, lon2) => {
 const parseElevationData = (layers) => {
     const elevationData = [];
     let totalDistance = 0;
+    let segment_id = 0;
   
     layers.forEach((layer) => {
       if (
@@ -36,8 +37,9 @@ const parseElevationData = (layers) => {
             const ele2 = parseFloat(latlngs[i + 1].meta.ele);
             const distance = haversine(lat1, lon1, lat2, lon2);
             totalDistance += distance;
-            elevationData.push({ distance: totalDistance, elevation: ele2 });
+            elevationData.push({ distance: totalDistance, elevation: ele2, colour: sublayer.options.color, segment_id: segment_id, lon: lon2, lat: lat2});
           }
+          segment_id++;
         }
         });
       } else {

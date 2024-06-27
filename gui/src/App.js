@@ -1,6 +1,7 @@
 import "./App.css";
 
 import GPXMap from "./GPXMap";
+import React from "react";
 
 function App() {
   return (

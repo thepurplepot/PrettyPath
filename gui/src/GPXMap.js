@@ -21,8 +21,9 @@ import { MapContext } from "./MapContext";
 import TarnLayer from "./TarnLayer";
 import "leaflet.heightgraph";
 import "leaflet.heightgraph/dist/L.Control.Heightgraph.min.css";
-import { parseGPXtoGeoJSON } from "./parseGPX";
 import Settings from "./Settings";
+import { parseElevationData } from "./parseElevationData";
+import ElevationChart, { LocationMarker } from "./ElevationChart";
 
 function MapBoundsUpdater({ setBounds }) {
   const map = useMapEvent("moveend", () => {
@@ -85,57 +86,9 @@ function GPXLayer({
   gpxHidden,
   setGpxLoaded,
   setStartLocation,
+  setEleData,
 }) {
   const map = useMap();
-  // const hg = window.L.control.heightgraph({
-  //   width: 800,
-  //   height: 280,
-  //   margins: {
-  //     top: 10,
-  //     right: 30,
-  //     bottom: 55,
-  //     left: 50
-  //   },
-  //   position: "bottomright",
-  //   expand: false,
-  // });
-  // hg.addTo(map);
-  //   const geojson = {type: "FeatureCollection",
-  //   features: [{
-  //       type: "Feature",
-  //       geometry: {
-  //           type: "LineString",
-  //           coordinates: [
-  //               [8.6865264, 49.3859188, 114.5],
-  //               [8.6864108, 49.3868472, 114.3],
-  //               [8.6860538, 49.3903808, 114.8]
-  //           ]
-  //       },
-  //       properties: {
-  //           attributeType: "3"
-  //       }
-  //   }, {
-  //       type: "Feature",
-  //       geometry: {
-  //           type: "LineString",
-  //           coordinates: [
-  //               [8.6860538, 49.3903808, 114.8],
-  //               [8.6857921, 49.3936309, 114.4],
-  //               [8.6860124, 49.3936431, 114.3]
-  //           ]
-  //       },
-  //       properties: {
-  //           attributeType: "0"
-  //       }
-  //   }],
-  //   properties: {
-  //       Creator: "OpenRouteService.org",
-  //       records: 2,
-  //       summary: "Steepness"
-  //   }
-  // };
-  //   hg.addData(geojson);
-  //   window.L.geoJson(geojson).addTo(map);
 
   useEffect(() => {
     const colors = ["red", "orange", "brown", "green", "blue", "purple"];
@@ -229,17 +182,22 @@ function GPXLayer({
             }
           }
         });
-        // console.log("GPX to GeoJSON")
-        // console.log(e.target.toGeoJSON());
-        // console.log("Parsed GPX to GeoJSON")
-        // console.log(parseGPXtoGeoJSON(e.target.getLayers()));
-        // hg.addData(parseGPXtoGeoJSON(e.target.getLayers()));
+        const eleData = parseElevationData(e.target.getLayers());
+        setEleData(eleData);
       })
       .on("error", function (e) {
         console.error("Error loading GPX file:", e);
       })
       .addTo(map);
-  }, [gpx_url, gpxLoaded, map, setGpxLoaded, setStartLocation, gpxHidden]);
+  }, [
+    gpx_url,
+    gpxLoaded,
+    map,
+    setGpxLoaded,
+    setStartLocation,
+    gpxHidden,
+    setEleData,
+  ]);
 
   return null;
 }
@@ -276,6 +234,9 @@ export default function GPXMap({ gpxUrl }) {
   });
   const [tarns, setTarns] = useState([]);
   const [unorderedTarns, setUnorderedTarns] = useState([]);
+  const [eleData, setEleData] = useState([]);
+  const [locationMarkerPosition, setLocationMarkerPosition] = useState([0, 0]);
+  const [isLocationMarkerVisible, setIsLocationMarkerVisible] = useState(false);
 
   const reloadGPX = () => {
     setGpxLoaded(false);
@@ -313,6 +274,11 @@ export default function GPXMap({ gpxUrl }) {
           toggleGPX={toggleGPX}
           gpxHidden={gpxHidden}
         />
+        <ElevationChart
+          data={eleData}
+          setLocationPosition={setLocationMarkerPosition}
+          setIsMarkerVisible={setIsLocationMarkerVisible}
+        />
         <MapContainer
           style={{ height: "100vh", width: "100%", zIndex: 10 }}
           center={[0, 0]}
@@ -329,11 +295,17 @@ export default function GPXMap({ gpxUrl }) {
             gpxHidden={gpxHidden}
             setGpxLoaded={setGpxLoaded}
             setStartLocation={setStartLocation}
+            setEleData={setEleData}
           />
+
           <TarnLayer />
           <DraggableMarker
             position={startLocation}
             setPosition={setStartLocation}
+          />
+          <LocationMarker
+            position={locationMarkerPosition}
+            isVisible={isLocationMarkerVisible}
           />
           <MapBoundsUpdater setBounds={setBounds} />
         </MapContainer>
