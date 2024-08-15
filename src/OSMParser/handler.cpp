@@ -107,15 +107,23 @@ void osmparser::Handler::read_elevation_data() {
   }
   double adfGeoTransform[6];
   if (m_poDataset->GetGeoTransform(adfGeoTransform) == CE_None) {
+    const int x_res = m_poDataset->GetRasterXSize();
+    const int y_res = m_poDataset->GetRasterYSize();
     m_ele_min_lon = adfGeoTransform[0];
-    m_ele_max_lon =
-        adfGeoTransform[0] + adfGeoTransform[1] * m_poDataset->GetRasterXSize();
+    m_ele_max_lon = adfGeoTransform[0] + adfGeoTransform[1] * x_res;
     m_ele_max_lat = adfGeoTransform[3];
-    m_ele_min_lat =
-        adfGeoTransform[3] + adfGeoTransform[5] * m_poDataset->GetRasterYSize();
+    m_ele_min_lat = adfGeoTransform[3] + adfGeoTransform[5] * y_res;
+
+    // Calculate the conversion factors
+    const double lat_center = (m_ele_max_lat + m_ele_min_lat) / 2.0;
+    const double lon_to_m = 111320.0 * cos(lat_center * M_PI / 180.0);
+    const double lat_to_m = 111320.0;
+
     std::cout << "Elevation data bounds: " << m_ele_min_lat << " -> "
               << m_ele_max_lat << ", " << m_ele_min_lon << " -> "
               << m_ele_max_lon << std::endl;
+    std::cout << "Elevation data resolution: " << adfGeoTransform[1] * lon_to_m << " m, "
+              << -adfGeoTransform[5] * lat_to_m << " m " << std::endl;
   } else {
     std::cerr << "Failed to get GeoTransform\n";
   }
